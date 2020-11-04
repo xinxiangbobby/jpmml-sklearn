@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.BiMap;
@@ -51,20 +50,25 @@ import org.dmg.pmml.TextIndex;
 import org.dmg.pmml.TextIndexNormalization;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
+import org.jpmml.converter.FieldNameUtil;
+import org.jpmml.converter.ObjectFeature;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.StringFeature;
 import org.jpmml.converter.ValueUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 import sklearn2pmml.feature_extraction.text.Splitter;
 
-public class CountVectorizer extends Transformer implements HasNumberOfFeatures {
+public class CountVectorizer extends Transformer {
 
 	public CountVectorizer(String module, String name){
 		super(module, name);
+	}
+
+	@Override
+	public int getNumberOfFeatures(){
+		return 1;
 	}
 
 	@Override
@@ -75,11 +79,6 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 	@Override
 	public DataType getDataType(){
 		return DataType.STRING;
-	}
-
-	@Override
-	public int getNumberOfFeatures(){
-		return 1;
 	}
 
 	@Override
@@ -107,12 +106,12 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 		if(lowercase){
 			Apply apply = PMMLUtil.createApply(PMMLFunctions.LOWERCASE, feature.ref());
 
-			DerivedField derivedField = encoder.ensureDerivedField(FeatureUtil.createName("lowercase", feature), OpType.CATEGORICAL, DataType.STRING, () -> apply);
+			DerivedField derivedField = encoder.ensureDerivedField(FieldNameUtil.create("lowercase", feature), OpType.CATEGORICAL, DataType.STRING, () -> apply);
 
 			feature = new StringFeature(encoder, derivedField);
 		}
 
-		DefineFunction defineFunction = encodeDefineFunction();
+		DefineFunction defineFunction = encodeDefineFunction(feature);
 
 		encoder.addDefineFunction(defineFunction);
 
@@ -123,7 +122,7 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 
 			Apply apply = encodeApply(defineFunction.getName(), feature, i, term);
 
-			Feature termFeature = new Feature(encoder, FieldName.create(defineFunction.getName() + "(" + term + ")"), dataType){
+			Feature termFeature = new ObjectFeature(encoder, FieldNameUtil.create(functionName(), feature, term), dataType){
 
 				@Override
 				public ContinuousFeature toContinuousFeature(){
@@ -137,7 +136,7 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 		return result;
 	}
 
-	public DefineFunction encodeDefineFunction(){
+	public DefineFunction encodeDefineFunction(Feature feature){
 		String analyzer = getAnalyzer();
 		List<String> stopWords = getStopWords();
 		Object[] nGramRange = getNGramRange();
@@ -182,9 +181,9 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 			textIndex.addTextIndexNormalizations(textIndexNormalization);
 		}
 
-		String name = functionName() + "@" + String.valueOf(CountVectorizer.SEQUENCE.getAndIncrement());
+		FieldName name = createFieldName(functionName(), feature);
 
-		DefineFunction defineFunction = new DefineFunction(name, OpType.CONTINUOUS, DataType.DOUBLE, null, textIndex)
+		DefineFunction defineFunction = new DefineFunction(name.getValue(), OpType.CONTINUOUS, DataType.DOUBLE, null, textIndex)
 			.addParameterFields(documentField, termField);
 
 		return defineFunction;
@@ -206,6 +205,10 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 
 	public Boolean getBinary(){
 		return getBoolean("binary");
+	}
+
+	public DType getDType(){
+		return (DType)getDType(false);
 	}
 
 	public Boolean getLowercase(){
@@ -239,7 +242,7 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 	}
 
 	public Map<String, ?> getVocabulary(){
-		return get("vocabulary_", Map.class);
+		return getDict("vocabulary_");
 	}
 
 	static
@@ -258,6 +261,4 @@ public class CountVectorizer extends Transformer implements HasNumberOfFeatures 
 	}
 
 	private static final Joiner JOINER = Joiner.on("|");
-
-	private static final AtomicInteger SEQUENCE = new AtomicInteger(1);
 }

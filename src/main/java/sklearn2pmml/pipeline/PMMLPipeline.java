@@ -25,11 +25,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import h2o.estimators.BaseEstimator;
-import numpy.core.NDArray;
 import numpy.core.ScalarUtil;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DataType;
+import org.dmg.pmml.DefineFunction;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.Extension;
 import org.dmg.pmml.FieldName;
@@ -49,16 +51,17 @@ import org.jpmml.converter.CMatrixUtil;
 import org.jpmml.converter.CategoricalLabel;
 import org.jpmml.converter.ContinuousLabel;
 import org.jpmml.converter.Feature;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.Label;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
 import org.jpmml.converter.TypeUtil;
+import org.jpmml.converter.ValueUtil;
 import org.jpmml.converter.WildcardFeature;
 import org.jpmml.converter.mining.MiningModelUtil;
 import org.jpmml.converter.visitors.AbstractExtender;
-import org.jpmml.model.ValueUtil;
-import org.jpmml.sklearn.ClassDictUtil;
-import org.jpmml.sklearn.PyClassDict;
+import org.jpmml.python.ClassDictUtil;
+import org.jpmml.python.PythonObject;
 import org.jpmml.sklearn.SkLearnEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,9 +71,15 @@ import sklearn.Estimator;
 import sklearn.HasClassifierOptions;
 import sklearn.HasNumberOfFeatures;
 import sklearn.Initializer;
+import sklearn.Step;
+import sklearn.StepUtil;
 import sklearn.Transformer;
-import sklearn.TransformerUtil;
+import sklearn.pipeline.FeatureUnion;
 import sklearn.pipeline.Pipeline;
+import sklearn.pipeline.PipelineClassifier;
+import sklearn.pipeline.PipelineRegressor;
+import sklearn.pipeline.PipelineTransformer;
+import sklearn2pmml.decoration.Domain;
 
 public class PMMLPipeline extends Pipeline {
 
@@ -89,7 +98,7 @@ public class PMMLPipeline extends Pipeline {
 		return super.encodeFeatures(features, encoder);
 	}
 
-	public PMML encodePMML(){
+	public PMML encodePMML(SkLearnEncoder encoder){
 		List<? extends Transformer> transformers = getTransformers();
 		Estimator estimator = null;
 
@@ -106,8 +115,6 @@ public class PMMLPipeline extends Pipeline {
 		List<String> targetFields = getTargetFields();
 		String repr = getRepr();
 		Verification verification = getVerification();
-
-		SkLearnEncoder encoder = new SkLearnEncoder();
 
 		Label label = null;
 
@@ -151,7 +158,7 @@ public class PMMLPipeline extends Pipeline {
 										if(value != null){
 											value = ScalarUtil.decode(value);
 
-											addExtension(pmmlValue, ValueUtil.toString(value));
+											addExtension(pmmlValue, ValueUtil.asString(value));
 										}
 
 										return super.visit(pmmlValue);
@@ -183,10 +190,10 @@ public class PMMLPipeline extends Pipeline {
 
 		List<Feature> features = new ArrayList<>();
 
-		PyClassDict featureInitializer = estimator;
+		PythonObject featureInitializer = estimator;
 
 		try {
-			Transformer transformer = TransformerUtil.getHead(transformers);
+			Transformer transformer = getHead(transformers, estimator);
 
 			if(transformer != null){
 				featureInitializer = transformer;
@@ -219,14 +226,11 @@ public class PMMLPipeline extends Pipeline {
 			return encodePMML(null, repr, encoder);
 		}
 
-		int numberOfFeatures = estimator.getNumberOfFeatures();
-		if(numberOfFeatures > -1){
-			ClassDictUtil.checkSize(numberOfFeatures, features);
-		}
+		StepUtil.checkNumberOfFeatures(estimator, features);
 
-		Schema schema = new Schema(label, features);
+		Schema schema = new Schema(encoder, label, features);
 
-		Model model = estimator.encodeModel(schema);
+		Model model = estimator.encode(schema);
 
 		if((predictTransformer != null) || (predictProbaTransformer != null) || (applyTransformer != null)){
 			Model finalModel = MiningModelUtil.getFinalModel(model);
@@ -234,7 +238,7 @@ public class PMMLPipeline extends Pipeline {
 			Output output = ModelUtil.ensureOutput(finalModel);
 
 			if(predictTransformer != null){
-				FieldName name = FieldName.create("predict(" + (label.getName()).getValue() + ")");
+				FieldName name = FieldNameUtil.create("predict", label.getName());
 
 				OutputField predictField;
 
@@ -254,7 +258,7 @@ public class PMMLPipeline extends Pipeline {
 
 				output.addOutputFields(predictField);
 
-				encodeOutput(output, Collections.singletonList(predictField), predictTransformer);
+				encodeOutput(output, Collections.singletonList(predictField), predictTransformer, encoder);
 			} // End if
 
 			if(predictProbaTransformer != null){
@@ -262,14 +266,14 @@ public class PMMLPipeline extends Pipeline {
 
 				List<OutputField> predictProbaFields = ModelUtil.createProbabilityFields(DataType.DOUBLE, categoricalLabel.getValues());
 
-				encodeOutput(output, predictProbaFields, predictProbaTransformer);
+				encodeOutput(output, predictProbaFields, predictProbaTransformer, encoder);
 			} // End if
 
 			if(applyTransformer != null){
 				OutputField nodeIdField = ModelUtil.createEntityIdField(FieldName.create("nodeId"))
 					.setDataType(DataType.INTEGER);
 
-				encodeOutput(output, Collections.singletonList(nodeIdField), applyTransformer);
+				encodeOutput(output, Collections.singletonList(nodeIdField), applyTransformer, encoder);
 			}
 		} // End if
 
@@ -277,7 +281,7 @@ public class PMMLPipeline extends Pipeline {
 		if(estimator.isSupervised()){
 
 			if(verification == null){
-				logger.warn("Model verification data is not set. Use method '" + ClassDictUtil.formatMember(this, "verify(X)") + "' to correct this deficiency");
+				logger.warn("Model verification data is not set. Use method \'" + ClassDictUtil.formatMember(this, "verify(X)") + "\' to correct this deficiency");
 
 				break verification;
 			}
@@ -331,11 +335,16 @@ public class PMMLPipeline extends Pipeline {
 
 			Map<VerificationField, List<?>> data = new LinkedHashMap<>();
 
-			for(int i = 0; i < activeFields.size(); i++){
-				VerificationField verificationField = ModelUtil.createVerificationField(FieldName.create(activeFields.get(i)));
+			if(activeFields != null){
 
-				data.put(verificationField, CMatrixUtil.getColumn(activeValues, rows, activeFields.size(), i));
-			}
+				for(int i = 0; i < activeFields.size(); i++){
+					VerificationField verificationField = ModelUtil.createVerificationField(FieldName.create(activeFields.get(i)));
+
+					Domain domain = encoder.getDomain(verificationField.getField());
+
+					data.put(verificationField, CMatrixUtil.getColumn(cleanValues(domain, activeValues), rows, activeFields.size(), i));
+				}
+			} // End if
 
 			if(probabilityFields != null){
 
@@ -344,7 +353,7 @@ public class PMMLPipeline extends Pipeline {
 						.setPrecision(precision)
 						.setZeroThreshold(zeroThreshold);
 
-					data.put(verificationField, CMatrixUtil.getColumn(probabilityValues, rows, probabilityFields.size(), i));
+					data.put(verificationField, CMatrixUtil.getColumn(cleanValues(null, probabilityValues), rows, probabilityFields.size(), i));
 				}
 			} else
 
@@ -364,7 +373,9 @@ public class PMMLPipeline extends Pipeline {
 							break;
 					}
 
-					data.put(verificationField, CMatrixUtil.getColumn(targetValues, rows, targetFields.size(), i));
+					Domain domain = encoder.getDomain(verificationField.getField());
+
+					data.put(verificationField, CMatrixUtil.getColumn(cleanValues(domain, targetValues), rows, targetFields.size(), i));
 				}
 			}
 
@@ -390,20 +401,20 @@ public class PMMLPipeline extends Pipeline {
 		return pmml;
 	}
 
-	private void encodeOutput(Output output, List<OutputField> outputFields, Transformer transformer){
-		SkLearnEncoder encoder = new SkLearnEncoder();
+	private void encodeOutput(Output output, List<OutputField> outputFields, Transformer transformer, SkLearnEncoder encoder){
+		SkLearnEncoder outputEncoder = new SkLearnEncoder();
 
 		List<Feature> features = new ArrayList<>();
 
 		for(OutputField outputField : outputFields){
-			DataField dataField = encoder.createDataField(outputField.getName(), outputField.getOpType(), outputField.getDataType());
+			DataField dataField = outputEncoder.createDataField(outputField.getName(), outputField.getOpType(), outputField.getDataType());
 
-			features.add(new WildcardFeature(encoder, dataField));
+			features.add(new WildcardFeature(outputEncoder, dataField));
 		}
 
-		transformer.encodeFeatures(features, encoder);
+		transformer.encode(features, outputEncoder);
 
-		Map<FieldName, DerivedField> derivedFields = encoder.getDerivedFields();
+		Map<FieldName, DerivedField> derivedFields = outputEncoder.getDerivedFields();
 
 		for(DerivedField derivedField : derivedFields.values()){
 			OutputField outputField = new OutputField(derivedField.getName(), derivedField.getOpType(), derivedField.getDataType())
@@ -411,6 +422,12 @@ public class PMMLPipeline extends Pipeline {
 				.setExpression(derivedField.getExpression());
 
 			output.addOutputFields(outputField);
+		}
+
+		Map<String, DefineFunction> defineFunctions = outputEncoder.getDefineFunctions();
+
+		for(DefineFunction defineFunction : defineFunctions.values()){
+			encoder.addDefineFunction(defineFunction);
 		}
 	}
 
@@ -497,17 +514,11 @@ public class PMMLPipeline extends Pipeline {
 		return this;
 	}
 
-	private List<String> initActiveFields(PyClassDict object){
-		int numberOfFeatures = -1;
+	private List<String> initActiveFields(Step step){
+		int numberOfFeatures = step.getNumberOfFeatures();
 
-		if(object instanceof HasNumberOfFeatures){
-			HasNumberOfFeatures hasNumberOfFeatures = (HasNumberOfFeatures)object;
-
-			numberOfFeatures = hasNumberOfFeatures.getNumberOfFeatures();
-		} // End if
-
-		if(numberOfFeatures < 0){
-			throw new IllegalArgumentException("The transformer object of the first step (" + ClassDictUtil.formatClass(object) + ") does not specify the number of input features");
+		if(numberOfFeatures == HasNumberOfFeatures.UNKNOWN){
+			throw new IllegalArgumentException("The transformer object of the first step (" + ClassDictUtil.formatClass(step) + ") does not specify the number of input features");
 		}
 
 		List<String> activeFields = new ArrayList<>(numberOfFeatures);
@@ -554,12 +565,73 @@ public class PMMLPipeline extends Pipeline {
 	}
 
 	static
-	private NDArray toArray(List<String> strings){
-		NDArray result = new NDArray();
-		result.put("data", strings);
-		result.put("fortran_order", Boolean.FALSE);
+	private Transformer getHead(List<? extends Transformer> transformers, Estimator estimator){
 
-		return result;
+		if(!transformers.isEmpty()){
+			Transformer transformer = transformers.get(0);
+
+			if(transformer instanceof FeatureUnion){
+				FeatureUnion featureUnion = (FeatureUnion)transformer;
+
+				return getHead(featureUnion.getTransformers(), null);
+			} else
+
+			if(transformer instanceof PipelineTransformer){
+				PipelineTransformer pipelineTransformer = (PipelineTransformer)transformer;
+
+				Pipeline pipeline = pipelineTransformer.getPipeline();
+
+				return getHead(pipeline.getTransformers(), null);
+			} else
+
+			{
+				return transformer;
+			}
+		} // End if
+
+		if(estimator != null){
+
+			if(estimator instanceof PipelineClassifier){
+				PipelineClassifier pipelineClassifier = (PipelineClassifier)estimator;
+
+				Pipeline pipeline = pipelineClassifier.getPipeline();
+
+				return getHead(pipeline.getTransformers(), pipeline.getFinalEstimator());
+			} else
+
+			if(estimator instanceof PipelineRegressor){
+				PipelineRegressor pipelineRegressor = (PipelineRegressor)estimator;
+
+				Pipeline pipeline = pipelineRegressor.getPipeline();
+
+				return getHead(pipeline.getTransformers(), pipeline.getFinalEstimator());
+			} else
+
+			{
+				return null;
+			}
+		}
+
+		return null;
+	}
+
+	static
+	private List<?> cleanValues(Domain domain, List<?> values){
+		Function<Object, Object> function = new Function<Object, Object>(){
+
+			@Override
+			public Object apply(Object value){
+				Domain.checkValue(value);
+
+				if(ValueUtil.isNaN(value)){
+					return null;
+				}
+
+				return value;
+			}
+		};
+
+		return Lists.transform(values, function);
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(PMMLPipeline.class);

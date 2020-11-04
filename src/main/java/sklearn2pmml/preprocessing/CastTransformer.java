@@ -21,18 +21,16 @@ package sklearn2pmml.preprocessing;
 import java.util.ArrayList;
 import java.util.List;
 
-import numpy.DType;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.DerivedField;
-import org.dmg.pmml.FieldName;
 import org.dmg.pmml.FieldRef;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
 import org.jpmml.converter.ObjectFeature;
 import org.jpmml.converter.StringFeature;
 import org.jpmml.sklearn.SkLearnEncoder;
+import sklearn.StepUtil;
 import sklearn.Transformer;
 
 public class CastTransformer extends Transformer {
@@ -43,21 +41,10 @@ public class CastTransformer extends Transformer {
 
 	@Override
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
-		DType dtype = getDType();
+		Object dtype = getDType();
 
-		DataType dataType = dtype.getDataType();
-
-		OpType opType;
-
-		switch(dataType){
-			case STRING:
-			case BOOLEAN:
-				opType = OpType.CATEGORICAL;
-				break;
-			default:
-				opType = OpType.CONTINUOUS;
-				break;
-		}
+		OpType opType = StepUtil.getOpType(dtype);
+		DataType dataType = StepUtil.getDataType(dtype);
 
 		List<Feature> result = new ArrayList<>();
 
@@ -65,11 +52,9 @@ public class CastTransformer extends Transformer {
 			Feature feature = features.get(i);
 
 			if(!(dataType).equals(feature.getDataType())){
-				FieldName name = FeatureUtil.createName((dataType.name()).toLowerCase(), feature);
-
 				FieldRef fieldRef = feature.ref();
 
-				DerivedField derivedField = encoder.ensureDerivedField(name, opType, dataType, () -> fieldRef);
+				DerivedField derivedField = encoder.ensureDerivedField(createFieldName((dataType.name()).toLowerCase(), feature), opType, dataType, () -> fieldRef);
 
 				switch(dataType){
 					case STRING:
@@ -81,9 +66,11 @@ public class CastTransformer extends Transformer {
 						feature = new ContinuousFeature(encoder, derivedField);
 						break;
 					case BOOLEAN:
+					case DATE:
+					case DATE_TIME:
 						// Falls through
 					default:
-						feature = new ObjectFeature(encoder, name, dataType);
+						feature = new ObjectFeature(encoder, derivedField);
 						break;
 				}
 			}
@@ -92,5 +79,9 @@ public class CastTransformer extends Transformer {
 		}
 
 		return result;
+	}
+
+	public Object getDType(){
+		return getDType(true);
 	}
 }

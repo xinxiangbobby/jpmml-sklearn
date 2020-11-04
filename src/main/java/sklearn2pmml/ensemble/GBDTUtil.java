@@ -41,7 +41,7 @@ import org.jpmml.converter.Schema;
 import org.jpmml.converter.ValueUtil;
 import org.jpmml.converter.mining.MiningModelUtil;
 import org.jpmml.model.visitors.AbstractVisitor;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import sklearn.Estimator;
 import sklearn.preprocessing.MultiOneHotEncoder;
 
@@ -62,7 +62,7 @@ public class GBDTUtil {
 			try {
 				gbdt.setPMMLOptions(hasNativeConfiguration.getNativeConfiguration());
 
-				model = gbdt.encodeModel(schema);
+				model = gbdt.encode(schema);
 			} finally {
 				gbdt.setPMMLOptions(pmmlOptions);
 			}
@@ -163,7 +163,6 @@ public class GBDTUtil {
 		}
 
 		Label label = schema.getLabel();
-		List<?> features = schema.getFeatures();
 
 		ContinuousLabel continuousLabel;
 

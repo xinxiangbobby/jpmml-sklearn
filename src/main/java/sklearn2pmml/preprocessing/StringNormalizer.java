@@ -29,7 +29,6 @@ import org.dmg.pmml.Field;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMMLFunctions;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.StringFeature;
 import org.jpmml.sklearn.SkLearnEncoder;
@@ -56,16 +55,7 @@ public class StringNormalizer extends Transformer {
 			Expression expression = feature.ref();
 
 			if(function != null){
-
-				switch(function){
-					case PMMLFunctions.LOWERCASE:
-					case PMMLFunctions.UPPERCASE:
-						break;
-					default:
-						throw new IllegalArgumentException(function);
-				}
-
-				expression = PMMLUtil.createApply(function, expression);
+				expression = PMMLUtil.createApply(translateFunction(function), expression);
 			} // End if
 
 			if(trimBlanks){
@@ -77,7 +67,7 @@ public class StringNormalizer extends Transformer {
 			// XXX: Should have been set by the previous transformer
 			field.setDataType(DataType.STRING);
 
-			DerivedField derivedField = encoder.createDerivedField(FeatureUtil.createName("normalize", feature), OpType.CATEGORICAL, DataType.STRING, expression);
+			DerivedField derivedField = encoder.createDerivedField(createFieldName("normalize", feature), OpType.CATEGORICAL, DataType.STRING, expression);
 
 			feature = new StringFeature(encoder, derivedField);
 
@@ -93,5 +83,21 @@ public class StringNormalizer extends Transformer {
 
 	public Boolean getTrimBlanks(){
 		return getOptionalBoolean("trim_blanks", Boolean.FALSE);
+	}
+
+	static
+	private String translateFunction(String function){
+
+		switch(function){
+			case "lower":
+			case "lowercase":
+				return PMMLFunctions.LOWERCASE;
+			case "upper":
+			case "uppercase":
+				return PMMLFunctions.UPPERCASE;
+			default:
+				throw new IllegalArgumentException(function);
+		}
+
 	}
 }

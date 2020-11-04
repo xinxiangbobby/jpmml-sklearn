@@ -41,10 +41,15 @@ public class SelectorProxy extends Selector {
 
 	@Override
 	public List<Boolean> getSupportMask(){
-		return (List)getArray("support_mask_", Boolean.class);
+		return getBooleanArray("support_mask_");
 	}
 
 	public int[] getSupportMaskShape(){
 		return getArrayShape("support_mask_", 1);
+	}
+
+	static
+	public String formatProxyExample(Selector selector){
+		return (SelectorProxy.class.getSimpleName() + "(" + selector.getPythonName() + "(...))");
 	}
 }

@@ -33,6 +33,7 @@ import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.ContinuousLabel;
 import org.jpmml.converter.DerivedOutputField;
 import org.jpmml.converter.Feature;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.Label;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
@@ -42,10 +43,9 @@ import sklearn.Classifier;
 import sklearn.ClassifierUtil;
 import sklearn.Estimator;
 import sklearn.HasEstimator;
-import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 
-public class StackingEstimator extends Transformer implements HasEstimator<Estimator>, HasNumberOfFeatures {
+public class StackingEstimator extends Transformer implements HasEstimator<Estimator> {
 
 	public StackingEstimator(String module, String name){
 		super(module, name);
@@ -84,13 +84,13 @@ public class StackingEstimator extends Transformer implements HasEstimator<Estim
 				throw new IllegalArgumentException();
 		}
 
-		Schema schema = new Schema(label, features);
+		Schema schema = new Schema(encoder, label, features);
 
-		Model model = estimator.encodeModel(schema);
+		Model model = estimator.encode(schema);
 
 		encoder.addTransformer(model);
 
-		FieldName name = FieldName.create("stack(" + features.size() + ")");
+		FieldName name = createFieldName("stack", features);
 
 		List<Feature> result = new ArrayList<>();
 
@@ -104,7 +104,7 @@ public class StackingEstimator extends Transformer implements HasEstimator<Estim
 					if(classifier.hasProbabilityDistribution()){
 
 						for(Object category : categories){
-							OutputField probabilityOutputField = ModelUtil.createProbabilityField(FieldName.create("probability(" + name.getValue() + ", " + category + ")"), DataType.DOUBLE, category)
+							OutputField probabilityOutputField = ModelUtil.createProbabilityField(FieldNameUtil.create("probability", name, category), DataType.DOUBLE, category)
 								.setFinalResult(false);
 
 							DerivedOutputField probabilityField = encoder.createDerivedField(model, probabilityOutputField, false);

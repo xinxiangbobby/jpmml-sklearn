@@ -81,13 +81,13 @@ public class KMeans extends Clusterer {
 			.setCompareFunction(CompareFunction.ABS_DIFF);
 
 		ClusteringModel clusteringModel = new ClusteringModel(MiningFunction.CLUSTERING, ClusteringModel.ModelClass.CENTER_BASED, numberOfClusters, ModelUtil.createMiningSchema(schema.getLabel()), comparisonMeasure, ClusteringModelUtil.createClusteringFields(schema.getFeatures()), clusters)
-			.setOutput(ClusteringModelUtil.createOutput(FieldName.create("Cluster"), DataType.DOUBLE, clusters));
+			.setOutput(ClusteringModelUtil.createOutput(FieldName.create("cluster"), DataType.DOUBLE, clusters));
 
 		return clusteringModel;
 	}
 
 	public List<? extends Number> getClusterCenters(){
-		return getArray("cluster_centers_", Number.class);
+		return getNumberArray("cluster_centers_");
 	}
 
 	public int[] getClusterCentersShape(){

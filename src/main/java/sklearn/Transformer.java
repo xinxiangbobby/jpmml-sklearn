@@ -25,15 +25,15 @@ import net.razorvine.pickle.objects.ClassDictConstructor;
 import numpy.DType;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DataType;
+import org.dmg.pmml.FieldName;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.Feature;
 import org.jpmml.converter.WildcardFeature;
-import org.jpmml.sklearn.ClassDictConstructorUtil;
-import org.jpmml.sklearn.PyClassDict;
+import org.jpmml.python.ClassDictConstructorUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 
 abstract
-public class Transformer extends PyClassDict {
+public class Transformer extends Step {
 
 	public Transformer(String module, String name){
 		super(module, name);
@@ -42,12 +42,32 @@ public class Transformer extends PyClassDict {
 	abstract
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder);
 
+	@Override
+	public int getNumberOfFeatures(){
+
+		if(containsKey("n_features_in_")){
+			return getInteger("n_features_in_");
+		}
+
+		return HasNumberOfFeatures.UNKNOWN;
+	}
+
+	@Override
 	public OpType getOpType(){
 		return OpType.CONTINUOUS;
 	}
 
+	@Override
 	public DataType getDataType(){
 		return DataType.DOUBLE;
+	}
+
+	public List<Feature> encode(List<Feature> features, SkLearnEncoder encoder){
+		StepUtil.checkNumberOfFeatures(this, features);
+
+		features = updateFeatures(features, encoder);
+
+		return encodeFeatures(features, encoder);
 	}
 
 	public List<Feature> updateFeatures(List<Feature> features, SkLearnEncoder encoder){
@@ -68,7 +88,14 @@ public class Transformer extends PyClassDict {
 			if(feature instanceof WildcardFeature){
 				WildcardFeature wildcardFeature = (WildcardFeature)feature;
 
-				DataField dataField = encoder.updateDataField(wildcardFeature.getName(), opType, dataType);
+				FieldName name = wildcardFeature.getName();
+
+				DataField dataField = encoder.getDataField(name);
+				if(dataField == null){
+					throw new IllegalArgumentException("Field " + name.getValue() + " is undefined");
+				}
+
+				dataField = updateDataField(dataField, opType, dataType, encoder);
 
 				feature = new WildcardFeature(encoder, dataField);
 			}
@@ -79,21 +106,46 @@ public class Transformer extends PyClassDict {
 		return result;
 	}
 
-	public List<Feature> updateAndEncodeFeatures(List<Feature> features, SkLearnEncoder encoder){
-		features = updateFeatures(features, encoder);
+	public DataField updateDataField(DataField dataField, OpType opType, DataType dataType, SkLearnEncoder encoder){
+		FieldName name = dataField.getName();
 
-		return encodeFeatures(features, encoder);
-	}
-
-	public DType getDType(){
-		Object dtype = getObject("dtype");
-
-		if(dtype instanceof ClassDictConstructor){
-			ClassDictConstructor classDictConstructor = (ClassDictConstructor)dtype;
-
-			dtype = ClassDictConstructorUtil.construct(classDictConstructor, DType.class);
+		if(encoder.isFrozen(name)){
+			return dataField;
 		}
 
-		return (DType)dtype;
+		switch(dataType){
+			case DOUBLE:
+				// If the DataField element already specifies a non-default data type, then keep it
+				if(!(DataType.DOUBLE).equals(dataField.getDataType())){
+					dataType = dataField.getDataType();
+				}
+				break;
+		}
+
+		dataField
+			.setOpType(opType)
+			.setDataType(dataType);
+
+		return dataField;
+	}
+
+	protected Object getDType(boolean extended){
+		Object dtype = get("dtype");
+
+		if(dtype instanceof String){
+			String string = (String)dtype;
+
+			if(extended){
+				return string;
+			}
+		} else
+
+		if(dtype instanceof ClassDictConstructor){
+			ClassDictConstructor dictConstructor = (ClassDictConstructor)dtype;
+
+			return ClassDictConstructorUtil.construct(dictConstructor, DType.class);
+		}
+
+		return get("dtype", DType.class);
 	}
 }

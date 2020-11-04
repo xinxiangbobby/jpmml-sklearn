@@ -23,19 +23,19 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.dmg.pmml.DataType;
-import org.dmg.pmml.FieldName;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.Output;
 import org.dmg.pmml.regression.RegressionModel;
 import org.jpmml.converter.CategoricalLabel;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
 import org.jpmml.converter.SchemaUtil;
+import org.jpmml.converter.ValueUtil;
 import org.jpmml.converter.mining.MiningModelUtil;
-import org.jpmml.model.ValueUtil;
 import sklearn.Classifier;
-import sklearn.EstimatorUtil;
 import sklearn.HasEstimatorEnsemble;
+import sklearn.StepUtil;
 
 public class OneVsRestClassifier extends Classifier implements HasEstimatorEnsemble<Classifier> {
 
@@ -45,7 +45,9 @@ public class OneVsRestClassifier extends Classifier implements HasEstimatorEnsem
 
 	@Override
 	public int getNumberOfFeatures(){
-		return EstimatorUtil.getNumberOfFeatures(this);
+		List<? extends Classifier> estimators = getEstimators();
+
+		return StepUtil.getNumberOfFeatures(estimators);
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public class OneVsRestClassifier extends Classifier implements HasEstimatorEnsem
 				throw new IllegalArgumentException();
 			}
 
-			return estimator.encodeModel(schema);
+			return estimator.encode(schema);
 		} else
 
 		if(estimators.size() >= 2){
@@ -84,13 +86,13 @@ public class OneVsRestClassifier extends Classifier implements HasEstimatorEnsem
 				}
 
 				Output output = new Output()
-					.addOutputFields(ModelUtil.createProbabilityField(FieldName.create("decisionFunction(" + categoricalLabel.getValue(i) + ")"), DataType.DOUBLE, categoricalLabel.getValue(i)));
+					.addOutputFields(ModelUtil.createProbabilityField(FieldNameUtil.create("decisionFunction", categoricalLabel.getValue(i)), DataType.DOUBLE, categoricalLabel.getValue(i)));
 
-				CategoricalLabel segmentCategoricalLabel = new CategoricalLabel(null, DataType.STRING, Arrays.asList("(other)", ValueUtil.toString(categoricalLabel.getValue(i))));
+				CategoricalLabel segmentCategoricalLabel = new CategoricalLabel(null, DataType.STRING, Arrays.asList("(other)", ValueUtil.asString(categoricalLabel.getValue(i))));
 
 				Schema segmentSchema = schema.toRelabeledSchema(segmentCategoricalLabel);
 
-				Model model = estimator.encodeModel(segmentSchema)
+				Model model = estimator.encode(segmentSchema)
 					.setOutput(output);
 
 				models.add(model);

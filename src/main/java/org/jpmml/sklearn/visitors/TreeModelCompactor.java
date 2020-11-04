@@ -45,7 +45,7 @@ public class TreeModelCompactor extends AbstractTreeModelTransformer {
 		if(node.hasNodes()){
 			List<Node> children = node.getNodes();
 
-			if(children.size() != 2 || score != null){
+			if(children.size() != 2){
 				throw new IllegalArgumentException();
 			}
 
@@ -56,7 +56,14 @@ public class TreeModelCompactor extends AbstractTreeModelTransformer {
 			Predicate secondPredicate = secondChild.getPredicate();
 
 			checkFieldReference(firstPredicate, secondPredicate);
-			checkValue(firstPredicate, secondPredicate);
+
+			if(firstPredicate instanceof SimplePredicate && secondPredicate instanceof SimplePredicate){
+				checkValue(firstPredicate, secondPredicate);
+			} else
+
+			{
+				throw new IllegalArgumentException();
+			} // End if
 
 			if(hasOperator(firstPredicate, SimplePredicate.Operator.NOT_EQUAL) && hasOperator(secondPredicate, SimplePredicate.Operator.EQUAL)){
 				children = swapChildren(node);
@@ -97,6 +104,8 @@ public class TreeModelCompactor extends AbstractTreeModelTransformer {
 			}
 
 			if((MiningFunction.REGRESSION).equals(this.miningFunction)){
+				parentNode.setScore(null);
+
 				initScore(parentNode, node);
 				replaceChildWithGrandchildren(parentNode, node);
 			} else

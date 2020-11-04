@@ -21,10 +21,10 @@ package sklearn.ensemble.gradient_boosting;
 import java.util.List;
 
 import com.google.common.collect.Iterables;
-import org.jpmml.sklearn.PyClassDict;
+import org.jpmml.python.PythonObject;
 import sklearn.HasDefaultValue;
 
-public class MeanEstimator extends PyClassDict implements HasDefaultValue {
+public class MeanEstimator extends PythonObject implements HasDefaultValue {
 
 	public MeanEstimator(String module, String name){
 		super(module, name);
@@ -36,6 +36,6 @@ public class MeanEstimator extends PyClassDict implements HasDefaultValue {
 	}
 
 	public List<? extends Number> getMean(){
-		return getArray("mean", Number.class);
+		return getNumberArray("mean");
 	}
 }

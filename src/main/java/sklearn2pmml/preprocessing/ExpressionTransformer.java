@@ -21,13 +21,18 @@ package sklearn2pmml.preprocessing;
 import java.util.Collections;
 import java.util.List;
 
+import org.dmg.pmml.DataType;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.Expression;
 import org.dmg.pmml.FieldName;
+import org.dmg.pmml.OpType;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.sklearn.ExpressionTranslator;
+import org.jpmml.python.DataFrameScope;
+import org.jpmml.python.ExpressionTranslator;
+import org.jpmml.python.Scope;
 import org.jpmml.sklearn.SkLearnEncoder;
+import sklearn.StepUtil;
 import sklearn.Transformer;
 
 public class ExpressionTransformer extends Transformer {
@@ -38,13 +43,44 @@ public class ExpressionTransformer extends Transformer {
 
 	@Override
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
+		Object dtype = getDType();
 		String expr = getExpr();
 
-		Expression expression = ExpressionTranslator.translate(expr, features);
+		Scope scope = new DataFrameScope(FieldName.create("X"), features);
 
-		DerivedField derivedField = encoder.createDerivedField(FieldName.create("eval(" + expr + ")"), expression);
+		Expression expression = ExpressionTranslator.translate(expr, scope);
+
+		DataType dataType;
+
+		if(dtype != null){
+			dataType = StepUtil.getDataType(dtype);
+		} else
+
+		{
+			if(ExpressionTranslator.isString(expression, scope)){
+				dataType = DataType.STRING;
+			} else
+
+			{
+				dataType = DataType.DOUBLE;
+			}
+		}
+
+		OpType opType = StepUtil.getOpType(dataType);
+
+		DerivedField derivedField = encoder.createDerivedField(createFieldName("eval", expr), opType, dataType, expression);
 
 		return Collections.singletonList(new ContinuousFeature(encoder, derivedField));
+	}
+
+	public Object getDType(){
+		Object dtype = get("dtype");
+
+		if(dtype == null){
+			return null;
+		}
+
+		return super.getDType(true);
 	}
 
 	public String getExpr(){

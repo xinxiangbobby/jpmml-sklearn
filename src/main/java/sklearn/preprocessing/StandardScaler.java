@@ -26,15 +26,13 @@ import org.dmg.pmml.Expression;
 import org.dmg.pmml.PMMLFunctions;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.ValueUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 
-public class StandardScaler extends Transformer implements HasNumberOfFeatures {
+public class StandardScaler extends Transformer {
 
 	public StandardScaler(String module, String name){
 		super(module, name);
@@ -56,7 +54,7 @@ public class StandardScaler extends Transformer implements HasNumberOfFeatures {
 		} else
 
 		{
-			return -1;
+			return super.getNumberOfFeatures();
 		}
 
 		return shape[0];
@@ -103,7 +101,7 @@ public class StandardScaler extends Transformer implements HasNumberOfFeatures {
 				expression = PMMLUtil.createApply(PMMLFunctions.DIVIDE, expression, PMMLUtil.createConstant(stdValue));
 			}
 
-			DerivedField derivedField = encoder.createDerivedField(FeatureUtil.createName("standard_scaler", continuousFeature), expression);
+			DerivedField derivedField = encoder.createDerivedField(createFieldName("standardScaler", continuousFeature), expression);
 
 			result.add(new ContinuousFeature(encoder, derivedField));
 		}
@@ -120,7 +118,7 @@ public class StandardScaler extends Transformer implements HasNumberOfFeatures {
 	}
 
 	public List<? extends Number> getMean(){
-		return getArray("mean_", Number.class);
+		return getNumberArray("mean_");
 	}
 
 	public int[] getMeanShape(){
@@ -131,11 +129,11 @@ public class StandardScaler extends Transformer implements HasNumberOfFeatures {
 
 		// SkLearn 0.16
 		if(containsKey("std_")){
-			return getArray("std_", Number.class);
+			return getNumberArray("std_");
 		}
 
 		// SkLearn 0.17+
-		return getArray("scale_", Number.class);
+		return getNumberArray("scale_");
 	}
 
 	public int[] getStdShape(){

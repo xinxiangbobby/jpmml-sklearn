@@ -19,12 +19,12 @@
 package org.jpmml.sklearn;
 
 import org.dmg.pmml.FieldName;
-import org.jpmml.evaluator.FloatEquivalence;
-import org.jpmml.evaluator.PMMLEquivalence;
-import org.jpmml.evaluator.RealNumberEquivalence;
+import org.jpmml.converter.FieldNameUtil;
+import org.jpmml.evaluator.testing.FloatEquivalence;
+import org.jpmml.evaluator.testing.RealNumberEquivalence;
 import org.junit.Test;
 
-public class RegressorTest extends EstimatorTest {
+public class RegressorTest extends SkLearnTest {
 
 	@Test
 	public void evaluateAdaBoostAuto() throws Exception {
@@ -48,7 +48,7 @@ public class RegressorTest extends EstimatorTest {
 
 	@Test
 	public void evaluateDecisionTreeAutoNA() throws Exception {
-		FieldName[] transformFields = {FieldName.create("eval(nodeId)")};
+		FieldName[] transformFields = {FieldNameUtil.create("eval", "nodeId")};
 
 		evaluate("DecisionTree", "AutoNA", excludeFields(transformFields));
 	}
@@ -89,8 +89,28 @@ public class RegressorTest extends EstimatorTest {
 	}
 
 	@Test
+	public void evaluateHistGradientBoostingAuto() throws Exception {
+		evaluate("HistGradientBoosting", "Auto");
+	}
+
+	@Test
+	public void evaluateHistGradientBoostingAutoNA() throws Exception {
+		evaluate("HistGradientBoosting", "AutoNA");
+	}
+
+	@Test
 	public void evaluateHuberAuto() throws Exception {
 		evaluate("Huber", "Auto");
+	}
+
+	@Test
+	public void evaluateIsotonicRegressionIncrAuto() throws Exception {
+		evaluate("IsotonicRegressionIncr", "Auto");
+	}
+
+	@Test
+	public void evaluateIsotonicRegressionDecrAuto() throws Exception {
+		evaluate("IsotonicRegressionDecr", "Auto");
 	}
 
 	@Test
@@ -120,7 +140,7 @@ public class RegressorTest extends EstimatorTest {
 
 	@Test
 	public void evaluateLinearRegressionAutoNA() throws Exception {
-		FieldName[] transformFields = {FieldName.create("predict(mpg)"), FieldName.create("cut(predict(mpg))")};
+		FieldName[] transformFields = {FieldNameUtil.create("predict", "mpg"), FieldNameUtil.create("cut", FieldNameUtil.create("predict", "mpg"))};
 
 		evaluate("LinearRegression", "AutoNA", excludeFields(transformFields));
 	}
@@ -148,6 +168,11 @@ public class RegressorTest extends EstimatorTest {
 	@Test
 	public void evaluateRidgeAuto() throws Exception {
 		evaluate("Ridge", "Auto");
+	}
+
+	@Test
+	public void evaluateStackingEnsembleAuto() throws Exception {
+		evaluate("StackingEnsemble", "Auto");
 	}
 
 	@Test
@@ -196,8 +221,8 @@ public class RegressorTest extends EstimatorTest {
 	}
 
 	@Test
-	public void evaluateIsolationForestHousing() throws Exception {
-		evaluate("IsolationForest", "Housing", new PMMLEquivalence(5e-12, 5e-12));
+	public void evaluateHistGradientBoostingHousing() throws Exception {
+		evaluate("HistGradientBoosting", "Housing");
 	}
 
 	@Test
@@ -208,11 +233,6 @@ public class RegressorTest extends EstimatorTest {
 	@Test
 	public void evaluateMLPHousing() throws Exception {
 		evaluate("MLP", "Housing");
-	}
-
-	@Test
-	public void evaluateOneClassSVMHousing() throws Exception {
-		evaluate("OneClassSVM", "Housing");
 	}
 
 	@Test
@@ -248,5 +268,15 @@ public class RegressorTest extends EstimatorTest {
 	@Test
 	public void evaluateXGBRFLMHousing() throws Exception {
 		evaluate("XGBRFLM", "Housing");
+	}
+
+	@Test
+	public void evaluateGammaRegressionVisit() throws Exception {
+		evaluate("GammaRegression", "Visit");
+	}
+
+	@Test
+	public void evaluatePoissonRegressionVisit() throws Exception {
+		evaluate("PoissonRegression", "Visit");
 	}
 }

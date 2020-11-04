@@ -22,13 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.dmg.pmml.DataType;
-import org.dmg.pmml.FieldName;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.regression.RegressionModel;
 import org.jpmml.converter.CMatrixUtil;
 import org.jpmml.converter.CategoricalLabel;
 import org.jpmml.converter.Feature;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
 import org.jpmml.converter.SchemaUtil;
@@ -74,7 +74,6 @@ public class LinearDiscriminantAnalysis extends LinearClassifier {
 		List<? extends Number> intercept = getIntercept();
 
 		CategoricalLabel categoricalLabel = (CategoricalLabel)schema.getLabel();
-
 		List<? extends Feature> features = schema.getFeatures();
 
 		// See https://github.com/scikit-learn/scikit-learn/issues/6848
@@ -93,7 +92,7 @@ public class LinearDiscriminantAnalysis extends LinearClassifier {
 
 			for(int i = 0, rows = categoricalLabel.size(); i < rows; i++){
 				RegressionModel regressionModel = RegressionModelUtil.createRegression(features, CMatrixUtil.getRow(coef, numberOfClasses, numberOfFeatures, i), intercept.get(i), RegressionModel.NormalizationMethod.NONE, segmentSchema)
-					.setOutput(ModelUtil.createPredictedOutput(FieldName.create("decisionFunction(" + categoricalLabel.getValue(i) + ")"), OpType.CONTINUOUS, DataType.DOUBLE));
+					.setOutput(ModelUtil.createPredictedOutput(FieldNameUtil.create("decisionFunction", categoricalLabel.getValue(i)), OpType.CONTINUOUS, DataType.DOUBLE));
 
 				regressionModels.add(regressionModel);
 			}

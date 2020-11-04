@@ -26,8 +26,8 @@ import org.dmg.pmml.DataType;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.Feature;
 import org.jpmml.converter.TypeUtil;
-import org.jpmml.sklearn.ClassDictUtil;
-import org.jpmml.sklearn.HasArray;
+import org.jpmml.python.ClassDictUtil;
+import org.jpmml.python.HasArray;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.Transformer;
 
@@ -86,7 +86,7 @@ public class OrdinalEncoder extends Transformer {
 			Feature feature = features.get(i);
 			List<?> featureCategories = categories.get(i);
 
-			result.add(EncoderUtil.encodeIndexFeature(feature, featureCategories, dataType, encoder));
+			result.add(EncoderUtil.encodeIndexFeature(this, feature, featureCategories, dataType, encoder));
 		}
 
 		return result;
@@ -94,5 +94,9 @@ public class OrdinalEncoder extends Transformer {
 
 	public List<List<?>> getCategories(){
 		return EncoderUtil.transformCategories(getList("categories_", HasArray.class));
+	}
+
+	public DType getDType(){
+		return (DType)getDType(false);
 	}
 }

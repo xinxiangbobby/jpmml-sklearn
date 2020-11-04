@@ -21,19 +21,19 @@ package sklearn.pipeline;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.dmg.pmml.DataType;
-import org.dmg.pmml.OpType;
-import org.jpmml.converter.Feature;
-import org.jpmml.sklearn.CastFunction;
-import org.jpmml.sklearn.ClassDictUtil;
-import org.jpmml.sklearn.SkLearnEncoder;
-import org.jpmml.sklearn.TupleUtil;
+import org.jpmml.python.CastFunction;
+import org.jpmml.python.CastUtil;
+import org.jpmml.python.Castable;
+import org.jpmml.python.ClassDictUtil;
+import org.jpmml.python.TupleUtil;
+import sklearn.Classifier;
+import sklearn.Composite;
 import sklearn.Estimator;
-import sklearn.HasNumberOfFeatures;
 import sklearn.PassThrough;
+import sklearn.Regressor;
 import sklearn.Transformer;
 
-public class Pipeline extends Transformer {
+public class Pipeline extends Composite implements Castable {
 
 	public Pipeline(){
 		this("sklearn.pipeline", "Pipeline");
@@ -44,48 +44,23 @@ public class Pipeline extends Transformer {
 	}
 
 	@Override
-	public OpType getOpType(){
-		List<? extends Transformer> transformers = getTransformers();
+	public boolean hasTransformers(){
+		List<Object[]> steps = getSteps();
 
-		for(Transformer transformer : transformers){
-			return transformer.getOpType();
+		if(steps.size() < 1){
+			return false;
+		} else
+
+		if(steps.size() == 1){
+			return !hasFinalEstimator();
+		} else
+
+		{
+			return true;
 		}
-
-		throw new IllegalArgumentException();
 	}
 
 	@Override
-	public DataType getDataType(){
-		List<? extends Transformer> transformers = getTransformers();
-
-		for(Transformer transformer : transformers){
-			return transformer.getDataType();
-		}
-
-		throw new IllegalArgumentException();
-	}
-
-	@Override
-	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
-		List<? extends Transformer> transformers = getTransformers();
-
-		for(Transformer transformer : transformers){
-
-			if(transformer instanceof HasNumberOfFeatures){
-				HasNumberOfFeatures hasNumberOfFeatures = (HasNumberOfFeatures)transformer;
-
-				int numberOfFeatures = hasNumberOfFeatures.getNumberOfFeatures();
-				if(numberOfFeatures > -1){
-					ClassDictUtil.checkSize(numberOfFeatures, features);
-				}
-			}
-
-			features = transformer.updateAndEncodeFeatures(features, encoder);
-		}
-
-		return features;
-	}
-
 	public boolean hasFinalEstimator(){
 		List<Object[]> steps = getSteps();
 
@@ -97,9 +72,16 @@ public class Pipeline extends Transformer {
 
 		Object estimator = TupleUtil.extractElement(finalStep, 1);
 
-		return ("passthrough").equals(estimator) || Estimator.class.isInstance(estimator);
+		if(("passthrough").equals(estimator)){
+			return true;
+		}
+
+		estimator = CastUtil.deepCastTo(estimator, Estimator.class);
+
+		return Estimator.class.isInstance(estimator);
 	}
 
+	@Override
 	public List<? extends Transformer> getTransformers(){
 		List<Object[]> steps = getSteps();
 
@@ -130,7 +112,12 @@ public class Pipeline extends Transformer {
 		return Lists.transform(transformers, castFunction);
 	}
 
+	@Override
 	public Estimator getFinalEstimator(){
+		return getFinalEstimator(Estimator.class);
+	}
+
+	public <E extends Estimator> E getFinalEstimator(Class<? extends E> clazz){
 		List<Object[]> steps = getSteps();
 
 		if(steps.size() < 1){
@@ -141,10 +128,10 @@ public class Pipeline extends Transformer {
 
 		Object estimator = TupleUtil.extractElement(finalStep, 1);
 
-		CastFunction<Estimator> castFunction = new CastFunction<Estimator>(Estimator.class){
+		CastFunction<E> castFunction = new CastFunction<E>(clazz){
 
 			@Override
-			public Estimator apply(Object object){
+			public E apply(Object object){
 
 				if(("passthrough").equals(object)){
 					return null;
@@ -160,6 +147,63 @@ public class Pipeline extends Transformer {
 		};
 
 		return castFunction.apply(estimator);
+	}
+
+	@Override
+	public Object castTo(Class<?> clazz){
+
+		if((Transformer.class).equals(clazz)){
+			return toTransformer();
+		} else
+
+		if((Estimator.class).equals(clazz)){
+			return toEstimator();
+		} else
+
+		if((Classifier.class).equals(clazz)){
+			return toClassifier();
+		} else
+
+		if((Regressor.class).equals(clazz)){
+			return toRegressor();
+		}
+
+		return this;
+	}
+
+	public Transformer toTransformer(){
+
+		if(hasFinalEstimator()){
+			Estimator estimator = getFinalEstimator();
+
+			if(estimator != null){
+				throw new IllegalArgumentException("The pipeline ends with an estimator object");
+			}
+		}
+
+		return new PipelineTransformer(this);
+	}
+
+	public Estimator toEstimator(){
+		Estimator estimator = getFinalEstimator();
+
+		if(estimator instanceof Classifier){
+			return toClassifier();
+		} else
+
+		if(estimator instanceof Regressor){
+			return toRegressor();
+		}
+
+		throw new IllegalArgumentException();
+	}
+
+	public Classifier toClassifier(){
+		return new PipelineClassifier(this);
+	}
+
+	public Regressor toRegressor(){
+		return new PipelineRegressor(this);
 	}
 
 	public List<Object[]> getSteps(){

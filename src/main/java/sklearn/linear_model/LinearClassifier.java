@@ -22,13 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.dmg.pmml.DataType;
-import org.dmg.pmml.FieldName;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.regression.RegressionModel;
 import org.jpmml.converter.CMatrixUtil;
 import org.jpmml.converter.CategoricalLabel;
 import org.jpmml.converter.Feature;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
 import org.jpmml.converter.SchemaUtil;
@@ -62,7 +62,6 @@ public class LinearClassifier extends Classifier {
 		List<? extends Number> intercept = getIntercept();
 
 		CategoricalLabel categoricalLabel = (CategoricalLabel)schema.getLabel();
-
 		List<? extends Feature> features = schema.getFeatures();
 
 		if(numberOfClasses == 1){
@@ -80,7 +79,7 @@ public class LinearClassifier extends Classifier {
 
 			for(int i = 0, rows = categoricalLabel.size(); i < rows; i++){
 				RegressionModel regressionModel = RegressionModelUtil.createRegression(features, CMatrixUtil.getRow(coef, numberOfClasses, numberOfFeatures, i), intercept.get(i), RegressionModel.NormalizationMethod.LOGIT, segmentSchema)
-					.setOutput(ModelUtil.createPredictedOutput(FieldName.create("decisionFunction(" + categoricalLabel.getValue(i) + ")"), OpType.CONTINUOUS, DataType.DOUBLE));
+					.setOutput(ModelUtil.createPredictedOutput(FieldNameUtil.create("decisionFunction", categoricalLabel.getValue(i)), OpType.CONTINUOUS, DataType.DOUBLE));
 
 				regressionModels.add(regressionModel);
 			}
@@ -94,7 +93,7 @@ public class LinearClassifier extends Classifier {
 	}
 
 	public List<? extends Number> getCoef(){
-		return getArray("coef_", Number.class);
+		return getNumberArray("coef_");
 	}
 
 	public int[] getCoefShape(){
@@ -102,6 +101,6 @@ public class LinearClassifier extends Classifier {
 	}
 
 	public List<? extends Number> getIntercept(){
-		return getArray("intercept_", Number.class);
+		return getNumberArray("intercept_");
 	}
 }

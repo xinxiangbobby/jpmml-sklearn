@@ -26,15 +26,13 @@ import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.PMMLFunctions;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.ValueUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 
-public class MaxAbsScaler extends Transformer implements HasNumberOfFeatures {
+public class MaxAbsScaler extends Transformer {
 
 	public MaxAbsScaler(String module, String name){
 		super(module, name);
@@ -70,7 +68,7 @@ public class MaxAbsScaler extends Transformer implements HasNumberOfFeatures {
 			// "$name / scale"
 			Apply apply = PMMLUtil.createApply(PMMLFunctions.DIVIDE, continuousFeature.ref(), PMMLUtil.createConstant(value));
 
-			DerivedField derivedField = encoder.createDerivedField(FeatureUtil.createName("max_abs_scaler", continuousFeature), apply);
+			DerivedField derivedField = encoder.createDerivedField(createFieldName("maxAbsScaler", continuousFeature), apply);
 
 			result.add(new ContinuousFeature(encoder, derivedField));
 		}
@@ -79,7 +77,7 @@ public class MaxAbsScaler extends Transformer implements HasNumberOfFeatures {
 	}
 
 	public List<? extends Number> getScale(){
-		return getArray("scale_", Number.class);
+		return getNumberArray("scale_");
 	}
 
 	public int[] getScaleShape(){

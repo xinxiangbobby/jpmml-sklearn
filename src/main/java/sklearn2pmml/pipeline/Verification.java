@@ -20,9 +20,12 @@ package sklearn2pmml.pipeline;
 
 import java.util.List;
 
-import org.jpmml.sklearn.PyClassDict;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import net.razorvine.pickle.IObjectConstructor;
+import org.jpmml.python.PythonObject;
 
-public class Verification extends PyClassDict {
+public class Verification extends PythonObject {
 
 	public Verification(String module, String name){
 		super(module, name);
@@ -33,15 +36,39 @@ public class Verification extends PyClassDict {
 	}
 
 	public List<?> getActiveValues(){
-		return getArray("active_values");
+		List<?> values = getArray("active_values");
+
+		// XXX
+		Function<Object, Object> function = new Function<Object, Object>(){
+
+			@Override
+			public Object apply(Object object){
+
+				if(object instanceof IObjectConstructor){
+					IObjectConstructor objectConstructor = (IObjectConstructor)object;
+
+					return objectConstructor.construct(new Object[0]);
+				}
+
+				return object;
+			}
+		};
+
+		return Lists.transform(values, function);
 	}
 
 	public int[] getActiveValuesShape(){
+		int[] shape = getArrayShape("active_values");
+
+		if(shape.length == 1){
+			return new int[]{shape[0], 1};
+		}
+
 		return getArrayShape("active_values", 2);
 	}
 
 	public List<? extends Number> getProbabilityValues(){
-		return getArray("probability_values", Number.class);
+		return getNumberArray("probability_values");
 	}
 
 	public int[] getProbabilityValuesShape(){

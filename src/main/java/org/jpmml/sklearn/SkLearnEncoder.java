@@ -19,6 +19,8 @@
 package org.jpmml.sklearn;
 
 import java.lang.reflect.Field;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DataType;
@@ -27,21 +29,17 @@ import org.dmg.pmml.Expression;
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.ModelEncoder;
+import org.jpmml.python.PickleUtil;
+import org.jpmml.python.PythonEncoder;
+import sklearn2pmml.decoration.Alias;
+import sklearn2pmml.decoration.Domain;
 
-public class SkLearnEncoder extends ModelEncoder {
+public class SkLearnEncoder extends PythonEncoder {
 
-	public DataField updateDataField(FieldName name, OpType opType, DataType dataType){
-		DataField dataField = getDataField(name);
+	private Map<FieldName, Domain> domains = new LinkedHashMap<>();
 
-		if(dataField == null){
-			throw new IllegalArgumentException("Field " + name.getValue() + " is undefined");
-		}
 
-		dataField.setOpType(opType);
-		dataField.setDataType(dataType);
-
-		return dataField;
+	public SkLearnEncoder(){
 	}
 
 	public DataField createDataField(FieldName name){
@@ -52,8 +50,30 @@ public class SkLearnEncoder extends ModelEncoder {
 		return createDerivedField(name, OpType.CONTINUOUS, DataType.DOUBLE, expression);
 	}
 
+	@Override
+	public void addDerivedField(DerivedField derivedField){
+
+		try {
+			super.addDerivedField(derivedField);
+		} catch(RuntimeException re){
+			FieldName name = derivedField.getName();
+
+			String message = "Field " + name.getValue() + " is already defined. " +
+				"Please refactor the pipeline so that it would not contain duplicate field declarations, " +
+				"or use the " + (Alias.class).getName() + " wrapper class to override the default name with a custom name (eg. " + Alias.formatAliasExample() + ")";
+
+			throw new IllegalArgumentException(message, re);
+		}
+	}
+
 	public void renameFeature(Feature feature, FieldName renamedName){
 		FieldName name = feature.getName();
+
+		org.dmg.pmml.Field<?> pmmlField = getField(name);
+
+		if(pmmlField instanceof DataField){
+			throw new IllegalArgumentException("User input field " + name.getValue() + " cannot be renamed");
+		}
 
 		DerivedField derivedField = removeDerivedField(name);
 
@@ -72,5 +92,28 @@ public class SkLearnEncoder extends ModelEncoder {
 		derivedField.setName(renamedName);
 
 		addDerivedField(derivedField);
+	}
+
+	public boolean isFrozen(FieldName name){
+		return this.domains.containsKey(name);
+	}
+
+	public Domain getDomain(FieldName name){
+		return this.domains.get(name);
+	}
+
+	public void setDomain(FieldName name, Domain domain){
+
+		if(domain != null){
+			this.domains.put(name, domain);
+		} else
+
+		{
+			this.domains.remove(name);
+		}
+	}
+
+	static {
+		PickleUtil.init("sklearn2pmml.properties");
 	}
 }

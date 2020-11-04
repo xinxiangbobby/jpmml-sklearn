@@ -18,23 +18,16 @@
  */
 package sklearn2pmml.decoration;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-import org.dmg.pmml.DataType;
-import org.dmg.pmml.DiscrStats;
+import org.dmg.pmml.DataField;
 import org.dmg.pmml.OpType;
-import org.dmg.pmml.UnivariateStats;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.PMMLUtil;
-import org.jpmml.converter.TypeUtil;
-import org.jpmml.converter.ValueUtil;
+import org.jpmml.converter.ObjectFeature;
+import org.jpmml.converter.PMMLEncoder;
 import org.jpmml.converter.WildcardFeature;
-import org.jpmml.sklearn.ClassDictUtil;
-import org.jpmml.sklearn.SkLearnEncoder;
 
-public class CategoricalDomain extends Domain {
+public class CategoricalDomain extends DiscreteDomain {
 
 	public CategoricalDomain(String module, String name){
 		super(module, name);
@@ -46,68 +39,15 @@ public class CategoricalDomain extends Domain {
 	}
 
 	@Override
-	public DataType getDataType(){
-		Boolean withData = getWithData();
+	public Feature encodeFeature(WildcardFeature wildcardFeature, List<?> values){
+		PMMLEncoder encoder = wildcardFeature.getEncoder();
 
-		if(withData){
-			List<?> data = getData();
+		if(values == null || values.isEmpty()){
+			DataField dataField = (DataField)encoder.toCategorical(wildcardFeature.getName(), null);
 
-			return TypeUtil.getDataType(data, DataType.STRING);
+			return new ObjectFeature(encoder, dataField);
 		}
 
-		return DataType.STRING;
-	}
-
-	@Override
-	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
-		Boolean withData = getWithData();
-		Boolean withStatistics = getWithStatistics();
-
-		ClassDictUtil.checkSize(1, features);
-
-		Feature feature = features.get(0);
-
-		WildcardFeature wildcardFeature = asWildcardFeature(feature);
-
-		if(withData){
-			List<?> data = getData();
-
-			feature = wildcardFeature.toCategoricalFeature(data);
-		} // End if
-
-		if(withStatistics){
-			Map<String, ?> counts = extractMap(getCounts(), 0);
-			Object[] discrStats = getDiscrStats();
-
-			UnivariateStats univariateStats = new UnivariateStats()
-				.setField(wildcardFeature.getName())
-				.setCounts(createCounts(counts))
-				.setDiscrStats(createDiscrStats(discrStats));
-
-			encoder.putUnivariateStats(univariateStats);
-		}
-
-		return super.encodeFeatures(Collections.singletonList(feature), encoder);
-	}
-
-	public List<?> getData(){
-		return getArray("data_");
-	}
-
-	public Object[] getDiscrStats(){
-		return getTuple("discr_stats_");
-	}
-
-	static
-	public DiscrStats createDiscrStats(Object[] objects){
-		List<Object> values = (List)asArray(objects[0]);
-		List<Integer> counts = ValueUtil.asIntegers((List)asArray(objects[1]));
-
-		ClassDictUtil.checkSize(values, counts);
-
-		DiscrStats discrStats = new DiscrStats()
-			.addArrays(PMMLUtil.createStringArray(values), PMMLUtil.createIntArray(counts));
-
-		return discrStats;
+		return wildcardFeature.toCategoricalFeature(standardizeValues(wildcardFeature.getDataType(), values));
 	}
 }

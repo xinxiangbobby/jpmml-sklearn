@@ -21,7 +21,6 @@ package sklearn;
 import java.util.List;
 
 import org.jpmml.converter.Feature;
-import org.jpmml.sklearn.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 
 abstract
@@ -35,8 +34,16 @@ public class Initializer extends MultiTransformer {
 	public List<Feature> initializeFeatures(SkLearnEncoder encoder);
 
 	@Override
+	public int getNumberOfFeatures(){
+		return HasNumberOfFeatures.UNKNOWN;
+	}
+
+	@Override
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
-		ClassDictUtil.checkSize(0, features);
+
+		if(features.size() != 0){
+			throw new IllegalArgumentException("Transformer \'" + getClassName() + "\' must be the first step of the pipeline");
+		}
 
 		return initializeFeatures(encoder);
 	}

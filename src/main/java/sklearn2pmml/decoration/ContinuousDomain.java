@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.dmg.pmml.DataField;
+import org.dmg.pmml.DataType;
 import org.dmg.pmml.Interval;
 import org.dmg.pmml.NumericInfo;
 import org.dmg.pmml.OpType;
@@ -31,8 +32,10 @@ import org.dmg.pmml.UnivariateStats;
 import org.jpmml.converter.Feature;
 import org.jpmml.converter.OutlierDecorator;
 import org.jpmml.converter.WildcardFeature;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
+import sklearn.HasNumberOfFeatures;
+import sklearn.StepUtil;
 
 public class ContinuousDomain extends Domain {
 
@@ -41,12 +44,41 @@ public class ContinuousDomain extends Domain {
 	}
 
 	@Override
+	public int getNumberOfFeatures(){
+		Boolean withData = getWithData();
+
+		if(withData){
+			int[] dataMinShape = getDataMinShape();
+			int[] dataMaxShape = getDataMaxShape();
+
+			if(dataMinShape[0] == dataMaxShape[0]){
+				return dataMinShape[0];
+			}
+		}
+
+		return HasNumberOfFeatures.UNKNOWN;
+	}
+
+	@Override
 	public OpType getOpType(){
 		return OpType.CONTINUOUS;
 	}
 
 	@Override
+	public DataType getDataType(){
+		Object dtype = getDType();
+
+		if(dtype != null){
+			return StepUtil.getDataType(dtype);
+		}
+
+		return DataType.DOUBLE;
+	}
+
+	@Override
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
+		features = super.encodeFeatures(features, encoder);
+
 		OutlierTreatmentMethod outlierTreatment = DomainUtil.parseOutlierTreatment(getOutlierTreatment());
 
 		Number lowValue;
@@ -114,7 +146,7 @@ public class ContinuousDomain extends Domain {
 				UnivariateStats univariateStats = new UnivariateStats()
 					.setField(dataField.getName())
 					.setCounts(createCounts(counts))
-					.setNumericInfo(createNumericInfo(numericInfo));
+					.setNumericInfo(createNumericInfo(wildcardFeature.getDataType(), numericInfo));
 
 				encoder.putUnivariateStats(univariateStats);
 			}
@@ -122,7 +154,19 @@ public class ContinuousDomain extends Domain {
 			result.add(feature);
 		}
 
-		return super.encodeFeatures(result, encoder);
+		return result;
+	}
+
+	@Override
+	public int[] getArrayShape(String name){
+		int[] shape = super.getArrayShape(name);
+
+		// XXX
+		if(shape.length == 0){
+			return new int[]{1};
+		}
+
+		return shape;
 	}
 
 	public String getOutlierTreatment(){
@@ -138,19 +182,27 @@ public class ContinuousDomain extends Domain {
 	}
 
 	public List<? extends Number> getDataMin(){
-		return getArray("data_min_", Number.class);
+		return getNumberArray("data_min_");
+	}
+
+	public int[] getDataMinShape(){
+		return getArrayShape("data_min_", 1);
 	}
 
 	public List<? extends Number> getDataMax(){
-		return getArray("data_max_", Number.class);
+		return getNumberArray("data_max_");
+	}
+
+	public int[] getDataMaxShape(){
+		return getArrayShape("data_max_", 1);
 	}
 
 	public Map<String, ?> getNumericInfo(){
-		return get("numeric_info_", Map.class);
+		return getDict("numeric_info_");
 	}
 
 	static
-	public NumericInfo createNumericInfo(Map<String, ?> values){
+	public NumericInfo createNumericInfo(DataType dataType, Map<String, ?> values){
 		NumericInfo numericInfo = new NumericInfo()
 			.setMinimum(selectValue(values, "minimum"))
 			.setMaximum(selectValue(values, "maximum"))

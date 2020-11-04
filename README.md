@@ -3,6 +3,20 @@ JPMML-SkLearn
 
 Java library and command-line application for converting [Scikit-Learn](https://scikit-learn.org/) pipelines to PMML.
 
+# Table of Contents #
+
+* [Features](#features)
+* [Prerequisites](#prerequisites)
+  * [The Python side of operations](#the-python-side-of-operations)
+  * [The JPMML-SkLearn side of operations](#the-jpmml-sklearn-side-of-operations)
+* [Installation](#installation)
+* [Usage](#usage)
+  * [The Python side of operations](#the-python-side-of-operations-1)
+  * [The JPMML-SkLearn side of operations](#the-jpmml-sklearn-side-of-operations-1)
+* [Documentation](#documentation)
+* [License](#license)
+* [Additional information](#additional-information)
+
 # Features #
 
 * Supported Estimator and Transformer types:
@@ -15,6 +29,7 @@ Java library and command-line application for converting [Scikit-Learn](https://
   * Matrix Decomposition:
     * [`decomposition.PCA`](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html)
     * [`decomposition.IncrementalPCA`](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.IncrementalPCA.html)
+    * [`decomposition.TruncatedSVD`](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.TruncatedSVD.html)
   * Discriminant Analysis:
     * [`discriminant_analysis.LinearDiscriminantAnalysis`](https://scikit-learn.org/stable/modules/generated/sklearn.discriminant_analysis.LinearDiscriminantAnalysis.html)
   * Dummies:
@@ -28,9 +43,13 @@ Java library and command-line application for converting [Scikit-Learn](https://
     * [`ensemble.ExtraTreesRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesRegressor.html)
     * [`ensemble.GradientBoostingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html)
     * [`ensemble.GradientBoostingRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html)
+    * [`ensemble.HistGradientBoostingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html)
+    * [`ensemble.HistGradientBoostingRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html)
     * [`ensemble.IsolationForest`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html)
     * [`ensemble.RandomForestClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)
     * [`ensemble.RandomForestRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html)
+    * [`ensemble.StackingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingClassifier.html)
+    * [`ensemble.StackingRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingRegressor.html)
     * [`ensemble.VotingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html)
     * [`ensemble.VotingRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingRegressor.html)
   * Feature Extraction:
@@ -51,11 +70,14 @@ Java library and command-line application for converting [Scikit-Learn](https://
   * Impute:
     * [`impute.MissingIndicator`](https://scikit-learn.org/stable/modules/generated/sklearn.impute.MissingIndicator.html)
     * [`impute.SimpleImputer`](https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html)
+  * Isotonic regression:
+    * [`isotonic.IsotonicRegression`](https://scikit-learn.org/stable/modules/generated/sklearn.isotonic.IsotonicRegression.html)
   * Generalized Linear Models:
     * [`linear_model.ARDRegression`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ARDRegression.html)
     * [`linear_model.BayesianRidge`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html)
     * [`linear_model.ElasticNet`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html)
     * [`linear_model.ElasticNetCV`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNetCV.html)
+    * [`linear_model.GammaRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html)
     * [`linear_model.HuberRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html)
     * [`linear_model.Lars`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lars.html)
     * [`linear_model.LarsCV`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LarsCV.html)
@@ -68,6 +90,7 @@ Java library and command-line application for converting [Scikit-Learn](https://
     * [`linear_model.LogisticRegressionCV`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegressionCV.html)
     * [`linear_model.OrthogonalMatchingPursuit`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.OrthogonalMatchingPursuit.html)
     * [`linear_model.OrthogonalMatchingPursuitCV`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.OrthogonalMatchingPursuitCV.html)
+    * [`linear_model.PoissonRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html)
     * [`linear_model.Ridge`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html)
     * [`linear_model.RidgeCV`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html)
     * [`linear_model.RidgeClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html)
@@ -75,6 +98,9 @@ Java library and command-line application for converting [Scikit-Learn](https://
     * [`linear_model.SGDClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html)
     * [`linear_model.SGDRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html)
     * [`linear_model.TheilSenRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html)
+  * Model Selection:
+    * [`model_selection.GridSearchCV`](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html)
+    * [`model_selection.RandomizedSearchCV`](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RandomizedSearchCV.html)
   * Multiclass classification:
     * [`multiclass.OneVsRestClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.multiclass.OneVsRestClassifier.html)
   * Naive Bayes:
@@ -115,10 +141,40 @@ Java library and command-line application for converting [Scikit-Learn](https://
     * [`tree.ExtraTreeClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.tree.ExtraTreeClassifier.html)
     * [`tree.ExtraTreeRegressor`](https://scikit-learn.org/stable/modules/generated/sklearn.tree.ExtraTreeRegressor.html)
 * Supported third-party Estimator and Transformer types:
+  * [Category Encoders](http://contrib.scikit-learn.org/category_encoders/):
+    * [`category_encoders.BaseNEncoder`](http://contrib.scikit-learn.org/category_encoders/basen.html)
+    * [`category_encoders.BinaryEncoder`](http://contrib.scikit-learn.org/category_encoders/binary.html)
+    * [`category_encoders.OrdinalEncoder`](http://contrib.scikit-learn.org/category_encoders/ordinal.html)
   * [H2O.ai](https://www.h2o.ai/):
     * [`h2o.estimators.gbm.H2OGradientBoostingEstimator`](http://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2ogradientboostingestimator)
     * [`h2o.estimators.glm.H2OGeneralizedLinearEstimator`](http://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2ogeneralizedlinearestimator)
+    * [`h2o.estimators.isolation_forest.H2OIsolationForestEstimator`](http://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2oisolationforestestimator)
     * [`h2o.estimators.random_forest.H2ORandomForestEstimator`](http://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2orandomforestestimator)
+    * [`h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator`](http://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/modeling.html#h2ostackedensembleestimator)
+  * [Imbalanced-Learn (imblearn)](https://github.com/scikit-learn-contrib/imbalanced-learn):
+    * [`imblearn.combine.SMOTEENN`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.combine.SMOTEENN.html)
+    * [`imblearn.combine.SMOTETomek`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.combine.SMOTETomek.html)
+    * [`imblearn.ensemble.BalancedBaggingClassifier`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.ensemble.BalancedBaggingClassifier.html)
+    * [`imblearn,ensemble,BalancedRandomForestClassifier`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.ensemble.BalancedRandomForestClassifier.html)
+    * [`imblearn.over_sampling.ADASYN`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.over_sampling.ADASYN.html)
+    * [`imblearn.over_sampling.BorderlineSMOTE`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.over_sampling.BorderlineSMOTE.html)
+    * [`imblearn.over_sampling.KMeansSMOTE`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.over_sampling.KMeansSMOTE.html)
+    * [`imblearn.over_sampling.RandomOverSampler`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.over_sampling.RandomOverSampler.html)
+    * [`imblearn.over_sampling.SMOTE`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.over_sampling.SMOTE.html)
+    * [`imblearn.over_sampling.SMOTENC`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.over_sampling.SMOTENC.html)
+    * [`imblearn.over_sampling.SVMSMOTE`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.over_sampling.SVMSMOTE.html)
+    * [`imblearn.pipeline.Pipeline`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.pipeline.Pipeline.html)
+    * [`imblearn.under_sampling.AllKNN`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.AllKNN.html)
+    * [`imblearn.under_sampling.ClusterCentroids`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.ClusterCentroids.html)
+    * [`imblearn.under_sampling.CondensedNearestNeighbour`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.CondensedNearestNeighbour.html)
+    * [`imblearn.under_sampling.EditedNearestNeighbours`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.EditedNearestNeighbours.html)
+    * [`imblearn.under_sampling.InstanceHardnessThreshold`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.InstanceHardnessThreshold.html)
+    * [`imblearn.under_sampling.NearMiss`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.NearMiss.html)
+    * [`imblearn.under_sampling.NeighbourhoodCleaningRule`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.NeighbourhoodCleaningRule.html)
+    * [`imblearn.under_sampling.OneSidedSelection`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.OneSidedSelection.html)
+    * [`imblearn.under_sampling.RandomUnderSampler`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.RandomUnderSampler.html)
+    * [`imblearn.under_sampling.RepeatedEditedNearestNeighbours`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.RepeatedEditedNearestNeighbours.html)
+    * [`imblearn.under_sampling.TomekLinks`](https://imbalanced-learn.readthedocs.io/en/stable/generated/imblearn.under_sampling.TomekLinks.html)
   * [LightGBM](https://github.com/Microsoft/LightGBM):
     * [`lightgbm.LGBMClassifier`](https://lightgbm.readthedocs.io/en/latest/Python-API.html#lightgbm.LGBMClassifier)
     * [`lightgbm.LGBMRanker`](https://lightgbm.readthedocs.io/en/latest/Python-API.html#lightgbm.LGBMRanker)
@@ -132,13 +188,15 @@ Java library and command-line application for converting [Scikit-Learn](https://
     * `sklearn2pmml.decoration.DateDomain`
     * `sklearn2pmml.decoration.DateTimeDomain`
     * `sklearn2pmml.decoration.MultiDomain`
+    * `sklearn2pmml.decoration.OrdinalDomain`
     * `sklearn2pmml.ensemble.GBDTLMRegressor`
       * The GBDT side: All Scikit-Learn decision tree ensemble regressors, `LGBMRegressor`, `XGBRegressor`, `XGBRFRegressor`.
       * The LM side: A Scikit-Learn linear regressor (eg. `ElasticNet`, `LinearRegression`, `SGDRegressor`).
     * `sklearn2pmml.ensemble.GBDTLRClassifier`
       * The GBDT side: All Scikit-Learn decision tree ensemble classifiers, `LGBMClassifier`, `XGBClassifier`, `XGBRFClassifier`.
       * The LR side: A Scikit-Learn binary linear classifier (eg. `LinearSVC`, `LogisticRegression`, `SGDClassifier`).
-    * `sklearn2pmml.ensemble.SelectFirstEstimator`
+    * `sklearn2pmml.ensemble.SelectFirstClassifier`
+    * `sklearn2pmml.ensemble.SelectFirstRegressor`
     * `sklearn2pmml.feature_selection.SelectUnique`
     * `sklearn2pmml.pipeline.PMMLPipeline`
     * `sklearn2pmml.preprocessing.Aggregator`
@@ -147,13 +205,17 @@ Java library and command-line application for converting [Scikit-Learn](https://
     * `sklearn2pmml.preprocessing.CutTransformer`
     * `sklearn2pmml.preprocessing.DaysSinceYearTransformer`
     * `sklearn2pmml.preprocessing.ExpressionTransformer`
-      * Ternary conditional expression `${expression_true} if ${condition} else ${expression_false}`.
-      * Array indexing expressions `X[${position}]` and `X[${name}]`.
+      * Ternary conditional expression `<expression_true> if <condition> else <expression_false>`.
+      * Array indexing expressions `X[<column index>]` and `X[<column name>]`.
+      * String concatenation expressions.
       * Arithmetic operators `+`, `-`, `*`, `/` and `%`.
-      * Comparison operators `<=`, `<`, `==`, `!=`, `>` and `>=`.
+      * Identity comparison operators `is None` and `is not None`.
+      * Comparison operators `in <list>`, `not in <list>`, `<=`, `<`, `==`, `!=`, `>` and `>=`.
       * Logical operators `and`, `or` and `not`.
       * Value missingness check functions `pandas.isnull` and `pandas.notnull`.
       * Numpy universal functions.
+      * String functions `lower`, `upper` and `strip`.
+    * `sklearn2pmml.preprocessing.IdentityTransformer`
     * `sklearn2pmml.preprocessing.LookupTransformer`
     * `sklearn2pmml.preprocessing.MatchesTransformer`
     * `sklearn2pmml.preprocessing.MultiLookupTransformer`
@@ -161,10 +223,12 @@ Java library and command-line application for converting [Scikit-Learn](https://
     * `sklearn2pmml.preprocessing.PMMLLabelEncoder`
     * `sklearn2pmml.preprocessing.PowerFunctionTransformer`
     * `sklearn2pmml.preprocessing.ReplaceTransformer`
+    * `sklearn2pmml.preprocessing.SecondsSinceMidnightTransformer`
     * `sklearn2pmml.preprocessing.SecondsSinceYearTransformer`
     * `sklearn2pmml.preprocessing.StringNormalizer`
     * `sklearn2pmml.preprocessing.SubstringTransformer`
     * `sklearn2pmml.preprocessing.h2o.H2OFrameCreator`
+    * `sklearn2pmml.preprocessing.scipy.BSplineTransformer`
     * `sklearn2pmml.ruleset.RuleSetClassifier`
   * [Sklearn-Pandas](https://github.com/paulgb/sklearn-pandas):
     * `sklearn_pandas.CategoricalImputer`
@@ -212,7 +276,7 @@ Enter the project root directory and build using [Apache Maven](https://maven.ap
 mvn clean install
 ```
 
-The build produces an executable uber-JAR file `target/jpmml-sklearn-executable-1.5-SNAPSHOT.jar`.
+The build produces an executable uber-JAR file `target/jpmml-sklearn-executable-1.6-SNAPSHOT.jar`.
 
 # Usage #
 
@@ -304,27 +368,41 @@ Please see the test script file [main.py](https://github.com/jpmml/jpmml-sklearn
 
 Converting the pipeline pickle file `pipeline.pkl.z` to a PMML file `pipeline.pmml`:
 ```
-java -jar target/jpmml-sklearn-executable-1.5-SNAPSHOT.jar --pkl-input pipeline.pkl.z --pmml-output pipeline.pmml
+java -jar target/jpmml-sklearn-executable-1.6-SNAPSHOT.jar --pkl-input pipeline.pkl.z --pmml-output pipeline.pmml
 ```
 
 Getting help:
 ```
-java -jar target/jpmml-sklearn-executable-1.5-SNAPSHOT.jar --help
+java -jar target/jpmml-sklearn-executable-1.6-SNAPSHOT.jar --help
 ```
 
 # Documentation #
 
-* [Extending Scikit-Learn with business rules (BR) model type](https://openscoring.io/blog/2018/09/17/sklearn_business_rules/)
-* [Converting Scikit-Learn based LightGBM pipelines to PMML documents](https://openscoring.io/blog/2019/04/07/converting_sklearn_lightgbm_pipeline_pmml/)
-* [Converting Scikit-Learn based TPOT automated machine learning (AutoML) pipelines to PMML documents](https://openscoring.io/blog/2019/06/10/converting_sklearn_tpot_pipeline_pmml/)
+Up-to-date:
+
+* [Converting Scikit-Learn based Imbalanced-Learn (imblearn) pipelines to PMML documents](https://openscoring.io/blog/2020/10/24/converting_sklearn_imblearn_pipeline_pmml/)
+* [Extending Scikit-Learn with date and datetime features](https://openscoring.io/blog/2020/03/08/sklearn_date_datetime_pmml/)
+* [Extending Scikit-Learn with feature specifications](https://openscoring.io/blog/2020/02/23/sklearn_feature_specification_pmml/)
+* [Converting logistic regression models to PMML documents](https://openscoring.io/blog/2020/01/19/converting_logistic_regression_pmml/)
+* [Stacking Scikit-Learn, LightGBM and XGBoost models](https://openscoring.io/blog/2020/01/02/stacking_sklearn_lightgbm_xgboost/)
+* [Converting Scikit-Learn hyperparameter-tuned pipelines to PMML documents](https://openscoring.io/blog/2019/12/25/converting_sklearn_gridsearchcv_pipeline_pmml/)
 * [Extending Scikit-Learn with GBDT plus LR ensemble (GBDT+LR) model type](https://openscoring.io/blog/2019/06/19/sklearn_gbdt_lr_ensemble/)
+* [Converting Scikit-Learn based TPOT automated machine learning (AutoML) pipelines to PMML documents](https://openscoring.io/blog/2019/06/10/converting_sklearn_tpot_pipeline_pmml/)
+* [Converting Scikit-Learn based LightGBM pipelines to PMML documents](https://openscoring.io/blog/2019/04/07/converting_sklearn_lightgbm_pipeline_pmml/)
+* [Extending Scikit-Learn with business rules (BR) model type](https://openscoring.io/blog/2018/09/17/sklearn_business_rules/)
+
+Slightly outdated:
+
+* [Converting Scikit-Learn to PMML](https://www.slideshare.net/VilluRuusmann/converting-scikitlearn-to-pmml)
 
 # License #
 
-JPMML-SkLearn is dual-licensed under the [GNU Affero General Public License (AGPL) version 3.0](https://www.gnu.org/licenses/agpl-3.0.html), and a commercial license.
+JPMML-SkLearn is licensed under the terms and conditions of the [GNU Affero General Public License, Version 3.0](https://www.gnu.org/licenses/agpl-3.0.html).
+
+If you would like to use JPMML-SkLearn in a proprietary software project, then it is possible to enter into a licensing agreement which makes JPMML-SkLearn available under the terms and conditions of the [BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause) instead.
 
 # Additional information #
 
 JPMML-SkLearn is developed and maintained by Openscoring Ltd, Estonia.
 
-Interested in using JPMML software in your application? Please contact [info@openscoring.io](mailto:info@openscoring.io)
+Interested in using [Java PMML API](https://github.com/jpmml) software in your company? Please contact [info@openscoring.io](mailto:info@openscoring.io)

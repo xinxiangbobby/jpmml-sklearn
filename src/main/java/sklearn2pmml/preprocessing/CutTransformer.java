@@ -31,10 +31,9 @@ import org.dmg.pmml.OpType;
 import org.jpmml.converter.CategoricalFeature;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
 import org.jpmml.converter.IndexFeature;
 import org.jpmml.converter.TypeUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.Transformer;
 
@@ -105,7 +104,7 @@ public class CutTransformer extends Transformer {
 			discretize.addDiscretizeBins(discretizeBin);
 		}
 
-		DerivedField derivedField = encoder.createDerivedField(FeatureUtil.createName("cut", feature), OpType.CATEGORICAL, dataType, discretize);
+		DerivedField derivedField = encoder.createDerivedField(createFieldName("cut", continuousFeature), OpType.CATEGORICAL, dataType, discretize);
 
 		Feature result;
 

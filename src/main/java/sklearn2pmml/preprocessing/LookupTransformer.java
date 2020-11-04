@@ -29,16 +29,15 @@ import java.util.Map;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.FieldColumnPair;
-import org.dmg.pmml.FieldName;
 import org.dmg.pmml.MapValues;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
+import org.jpmml.converter.ObjectFeature;
 import org.jpmml.converter.PMMLEncoder;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.TypeUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.Transformer;
 
@@ -98,11 +97,9 @@ public class LookupTransformer extends Transformer {
 
 		mapValues.setDataType(dataType);
 
-		FieldName name = FeatureUtil.createName("lookup", features);
+		DerivedField derivedField = encoder.createDerivedField(createFieldName("lookup", features), OpType.CATEGORICAL, dataType, mapValues);
 
-		DerivedField derivedField = encoder.createDerivedField(name, OpType.CATEGORICAL, dataType, mapValues);
-
-		Feature feature = new Feature(encoder, derivedField.getName(), derivedField.getDataType()){
+		Feature feature = new ObjectFeature(encoder, derivedField){
 
 			@Override
 			public ContinuousFeature toContinuousFeature(){

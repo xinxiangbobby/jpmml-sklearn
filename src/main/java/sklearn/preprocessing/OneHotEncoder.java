@@ -32,7 +32,7 @@ import org.jpmml.converter.Feature;
 import org.jpmml.converter.TypeUtil;
 import org.jpmml.converter.ValueUtil;
 import org.jpmml.converter.WildcardFeature;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.Transformer;
 
@@ -119,7 +119,7 @@ public class OneHotEncoder extends Transformer {
 	}
 
 	public List<? extends Number> getActiveFeatures(){
-		return getArray("active_features_", Number.class);
+		return getNumberArray("active_features_");
 	}
 
 	public List<Integer> getFeatureSizes(){

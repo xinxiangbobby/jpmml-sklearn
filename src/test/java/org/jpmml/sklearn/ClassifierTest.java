@@ -18,13 +18,60 @@
  */
 package org.jpmml.sklearn;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+
+import com.google.common.base.Equivalence;
 import org.dmg.pmml.FieldName;
-import org.jpmml.evaluator.FloatEquivalence;
-import org.jpmml.evaluator.PMMLEquivalence;
-import org.jpmml.evaluator.RealNumberEquivalence;
+import org.jpmml.converter.FieldNameUtil;
+import org.jpmml.evaluator.ResultField;
+import org.jpmml.evaluator.testing.Batch;
+import org.jpmml.evaluator.testing.FloatEquivalence;
+import org.jpmml.evaluator.testing.PMMLEquivalence;
+import org.jpmml.evaluator.testing.RealNumberEquivalence;
 import org.junit.Test;
 
-public class ClassifierTest extends EstimatorTest {
+public class ClassifierTest extends SkLearnTest {
+
+	@Override
+	protected Batch createBatch(String name, String dataset, Predicate<ResultField> predicate, Equivalence<Object> equivalence){
+		Batch result = new SkLearnTestBatch(name, dataset, predicate, equivalence){
+
+			@Override
+			public ClassifierTest getIntegrationTest(){
+				return ClassifierTest.this;
+			}
+
+			@Override
+			public List<Map<FieldName, String>> getInput() throws IOException {
+				String dataset = super.getDataset();
+
+				if(dataset.endsWith("Cat")){
+					dataset = dataset.substring(0, dataset.length() - "Cat".length());
+				} else
+
+				if(dataset.endsWith("Dict")){
+					dataset = dataset.substring(0, dataset.length() - "Dict".length());
+				}
+
+				return loadRecords("/csv/" + dataset + ".csv");
+			}
+		};
+
+		return result;
+	}
+
+	@Test
+	public void evaluateDurationInDaysApollo() throws Exception {
+		evaluate("DurationInDays", "Apollo");
+	}
+
+	@Test
+	public void evaluateDurationInSecondsApollo() throws Exception {
+		evaluate("DurationInSeconds", "Apollo");
+	}
 
 	@Test
 	public void evaluateDecisionTreeAudit() throws Exception {
@@ -41,6 +88,11 @@ public class ClassifierTest extends EstimatorTest {
 		FieldName[] transformFields = {FieldName.create("eval(nodeId)")};
 
 		evaluate("DecisionTree", "AuditNA", excludeFields(transformFields));
+	}
+
+	@Test
+	public void evaluateBalancedDecisionTreeEnsembleAudit() throws Exception {
+		evaluate("BalancedDecisionTreeEnsemble", "Audit");
 	}
 
 	@Test
@@ -66,6 +118,16 @@ public class ClassifierTest extends EstimatorTest {
 	@Test
 	public void evaluateGradientBoostingAudit() throws Exception {
 		evaluate("GradientBoosting", "Audit");
+	}
+
+	@Test
+	public void evaluateHistGradientBoostingAudit() throws Exception {
+		evaluate("HistGradientBoosting", "Audit");
+	}
+
+	@Test
+	public void evaluateHistGradientBoostingAuditNA() throws Exception {
+		evaluate("HistGradientBoosting", "AuditNA");
 	}
 
 	@Test
@@ -136,6 +198,11 @@ public class ClassifierTest extends EstimatorTest {
 	}
 
 	@Test
+	public void evaluateBalancedRandomForestAudit() throws Exception {
+		evaluate("BalancedRandomForest", "Audit");
+	}
+
+	@Test
 	public void evaluateRidgeAudit() throws Exception {
 		evaluate("Ridge", "Audit");
 	}
@@ -143,6 +210,11 @@ public class ClassifierTest extends EstimatorTest {
 	@Test
 	public void evaluateRidgeEnsembleAudit() throws Exception {
 		evaluate("RidgeEnsemble", "Audit");
+	}
+
+	@Test
+	public void evaluateStackingEnsembleAudit() throws Exception {
+		evaluate("StackingEnsemble", "Audit");
 	}
 
 	@Test
@@ -162,12 +234,12 @@ public class ClassifierTest extends EstimatorTest {
 
 	@Test
 	public void evaluateXGBAudit() throws Exception {
-		evaluate("XGB", "Audit", new FloatEquivalence(64));
+		evaluate("XGB", "Audit", excludeFields(ClassifierTest.falseProbabilityField), new FloatEquivalence(8));
 	}
 
 	@Test
 	public void evaluateXGBAuditNA() throws Exception {
-		FieldName[] transformFields = {FieldName.create("predict(Adjusted)"), FieldName.create("eval(Adjusted)")};
+		FieldName[] transformFields = {ClassifierTest.falseProbabilityField, FieldName.create("predict(Adjusted)"), FieldName.create("eval(Adjusted)")};
 
 		evaluate("XGB", "AuditNA", excludeFields(transformFields), new FloatEquivalence(8));
 	}
@@ -179,7 +251,7 @@ public class ClassifierTest extends EstimatorTest {
 
 	@Test
 	public void evaluateXGBRFAudit() throws Exception {
-		evaluate("XGBRF", "Audit", new FloatEquivalence(8));
+		evaluate("XGBRF", "Audit", excludeFields(ClassifierTest.falseProbabilityField), new FloatEquivalence(4));
 	}
 
 	@Test
@@ -210,6 +282,11 @@ public class ClassifierTest extends EstimatorTest {
 	@Test
 	public void evaluateGradientBoostingIris() throws Exception {
 		evaluate("GradientBoosting", "Iris");
+	}
+
+	@Test
+	public void evaluateHistGradientBoostingIris() throws Exception {
+		evaluate("HistGradientBoosting", "Iris");
 	}
 
 	@Test
@@ -298,6 +375,11 @@ public class ClassifierTest extends EstimatorTest {
 	}
 
 	@Test
+	public void evaluateStackingEnsembleIris() throws Exception {
+		evaluate("StackingEnsemble", "Iris");
+	}
+
+	@Test
 	public void evaluateSVCIris() throws Exception {
 		evaluate("SVC", "Iris");
 	}
@@ -319,7 +401,7 @@ public class ClassifierTest extends EstimatorTest {
 
 	@Test
 	public void evaluateXGBIris() throws Exception {
-		evaluate("XGB", "Iris", new FloatEquivalence(4));
+		evaluate("XGB", "Iris", new FloatEquivalence(8));
 	}
 
 	@Test
@@ -397,7 +479,7 @@ public class ClassifierTest extends EstimatorTest {
 		FieldName[] result = new FieldName[count];
 
 		for(int i = 0; i < count; i++){
-			result[i] = FieldName.create(prefix + "(" + (i + 1) + ")");
+			result[i] = FieldNameUtil.create(prefix, String.valueOf(i + 1));
 		}
 
 		return result;
@@ -405,6 +487,8 @@ public class ClassifierTest extends EstimatorTest {
 
 	private static final FieldName[] neighborFields = createFields("neighbor", 5);
 
-	private static final FieldName[] auditProbabilityFields = {FieldName.create("probability(0)"), FieldName.create("probability(1)")};
-	private static final FieldName[] irisProbabilityFields = {FieldName.create("probability(setosa)"), FieldName.create("probability(versicolor)"), FieldName.create("probability(virginica)")};
+	private static final FieldName falseProbabilityField = FieldNameUtil.create("probability", "0");
+	private static final FieldName trueProbabilityField = FieldNameUtil.create("probability", "1");
+
+	private static final FieldName[] irisProbabilityFields = {FieldNameUtil.create("probability", "setosa"), FieldNameUtil.create("probability", "versicolor"), FieldNameUtil.create("probability", "virginica")};
 }

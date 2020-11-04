@@ -19,21 +19,19 @@
 package sklearn2pmml.preprocessing;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.TimeZone;
 
-import org.dmg.pmml.Apply;
+import com.google.common.base.CaseFormat;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
 import org.jpmml.converter.ObjectFeature;
 import org.jpmml.converter.PMMLUtil;
+import org.jpmml.python.CalendarUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.Transformer;
 
@@ -45,7 +43,7 @@ public class DurationTransformer extends Transformer {
 	}
 
 	abstract
-	public String getFunction();
+	public String getPMMLFunction();
 
 	@Override
 	public DataType getDataType(){
@@ -55,18 +53,21 @@ public class DurationTransformer extends Transformer {
 	@Override
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
 		GregorianCalendar epoch = getEpoch();
-		String function = getFunction();
+		String pmmlFunction = getPMMLFunction();
 
-		ZoneId epochZoneId = ZoneId.systemDefault();
-
-		TimeZone epochTimeZone = epoch.getTimeZone();
-		if(epochTimeZone != null){
-			epochZoneId = epochTimeZone.toZoneId();
-		}
-
-		LocalDateTime epochDateTime = LocalDateTime.ofInstant(epoch.toInstant(), epochZoneId);
+		LocalDateTime epochDateTime = CalendarUtil.toLocalDateTime(epoch);
 		if(epochDateTime.getMonthValue() != 1 || epochDateTime.getDayOfMonth() != 1){
 			throw new IllegalArgumentException(String.valueOf(epochDateTime));
+		}
+
+		int year = epochDateTime.getYear();
+
+		String function = pmmlFunction;
+
+		if(function.startsWith("date")){
+			function = function.substring("date".length());
+
+			function = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, function);
 		}
 
 		List<Feature> result = new ArrayList<>();
@@ -74,9 +75,7 @@ public class DurationTransformer extends Transformer {
 		for(int i = 0; i < features.size(); i++){
 			ObjectFeature objectFeature = (ObjectFeature)features.get(i);
 
-			Apply apply = PMMLUtil.createApply(function, objectFeature.ref(), PMMLUtil.createConstant(epochDateTime.getYear(), DataType.INTEGER));
-
-			DerivedField derivedField = encoder.createDerivedField(FeatureUtil.createName("days_since_year", objectFeature), OpType.CONTINUOUS, DataType.INTEGER, apply);
+			DerivedField derivedField = encoder.ensureDerivedField(createFieldName(function, objectFeature, year), OpType.CONTINUOUS, DataType.INTEGER, () -> PMMLUtil.createApply(pmmlFunction, objectFeature.ref(), PMMLUtil.createConstant(year, DataType.INTEGER)));
 
 			result.add(new ContinuousFeature(encoder, derivedField));
 		}

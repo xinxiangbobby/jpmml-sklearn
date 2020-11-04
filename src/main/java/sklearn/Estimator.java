@@ -18,20 +18,22 @@
  */
 package sklearn;
 
+import java.util.List;
 import java.util.Map;
 
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.MiningFunction;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.OpType;
+import org.jpmml.converter.Feature;
+import org.jpmml.converter.ModelEncoder;
 import org.jpmml.converter.Schema;
-import org.jpmml.sklearn.ClassDictUtil;
-import org.jpmml.sklearn.PyClassDict;
+import org.jpmml.python.ClassDictUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract
-public class Estimator extends PyClassDict implements HasNumberOfFeatures {
+public class Estimator extends Step {
 
 	public Estimator(String module, String name){
 		super(module, name);
@@ -42,6 +44,26 @@ public class Estimator extends PyClassDict implements HasNumberOfFeatures {
 
 	abstract
 	public Model encodeModel(Schema schema);
+
+	@Override
+	public int getNumberOfFeatures(){
+
+		if(containsKey("n_features_")){
+			return getInteger("n_features_");
+		}
+
+		return HasNumberOfFeatures.UNKNOWN;
+	}
+
+	@Override
+	public OpType getOpType(){
+		return OpType.CONTINUOUS;
+	}
+
+	@Override
+	public DataType getDataType(){
+		return DataType.DOUBLE;
+	}
 
 	public boolean isSupervised(){
 		MiningFunction miningFunction = getMiningFunction();
@@ -57,22 +79,33 @@ public class Estimator extends PyClassDict implements HasNumberOfFeatures {
 		}
 	}
 
-	@Override
-	public int getNumberOfFeatures(){
+	public Model encode(Schema schema){
+		Model model = encodeModel(schema);
 
-		if(containsKey("n_features_")){
-			return getInteger("n_features_");
+		addFeatureImportances(model, schema);
+
+		return model;
+	}
+
+	public void addFeatureImportances(Model model, Schema schema){
+		List<? extends Number> featureImportances = getPMMLFeatureImportances();
+		if(featureImportances == null){
+			featureImportances = getFeatureImportances();
 		}
 
-		return -1;
-	}
+		ModelEncoder encoder = (ModelEncoder)schema.getEncoder();
+		List<? extends Feature> features = schema.getFeatures();
 
-	public OpType getOpType(){
-		return OpType.CONTINUOUS;
-	}
+		if(featureImportances != null){
+			ClassDictUtil.checkSize(features, featureImportances);
 
-	public DataType getDataType(){
-		return DataType.DOUBLE;
+			for(int i = 0; i < features.size(); i++){
+				Feature feature = features.get(i);
+				Number featureImportance = featureImportances.get(i);
+
+				encoder.addFeatureImportance(model, feature.getName(), featureImportance);
+			}
+		}
 	}
 
 	public Object getOption(String key, Object defaultValue){
@@ -92,8 +125,42 @@ public class Estimator extends PyClassDict implements HasNumberOfFeatures {
 		return defaultValue;
 	}
 
+	public boolean hasFeatureImportances(){
+		return containsKey("feature_importances_") || containsKey("pmml_feature_importances_");
+	}
+
+	public List<? extends Number> getFeatureImportances(){
+
+		if(!containsKey("feature_importances_")){
+			return null;
+		}
+
+		return getNumberArray("feature_importances_");
+	}
+
+	public List<? extends Number> getPMMLFeatureImportances(){
+
+		if(!containsKey("pmml_feature_importances_")){
+			return null;
+		}
+
+		return getNumberArray("pmml_feature_importances_");
+	}
+
+	public Estimator setPMMLFeatureImportances(List<? extends Number> pmmlFeatureImportances){
+		put("pmml_feature_importances_", toArray(pmmlFeatureImportances));
+
+		return this;
+	}
+
 	public Map<String, ?> getPMMLOptions(){
-		return getOptional("pmml_options_", Map.class);
+		Object value = get("pmml_options_");
+
+		if(value == null){
+			return null;
+		}
+
+		return getDict("pmml_options_");
 	}
 
 	public Estimator setPMMLOptions(Map<String, ?> pmmlOptions){

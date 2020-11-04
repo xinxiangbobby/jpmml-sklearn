@@ -28,8 +28,8 @@ import org.dmg.pmml.mining.Segmentation.MultipleModelMethod;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
 import org.jpmml.converter.mining.MiningModelUtil;
-import sklearn.EstimatorUtil;
 import sklearn.Regressor;
+import sklearn.StepUtil;
 import sklearn.ensemble.EnsembleRegressor;
 
 public class AdaBoostRegressor extends EnsembleRegressor {
@@ -40,7 +40,9 @@ public class AdaBoostRegressor extends EnsembleRegressor {
 
 	@Override
 	public int getNumberOfFeatures(){
-		return EstimatorUtil.getNumberOfFeatures(this);
+		List<? extends Regressor> estimators = getEstimators();
+
+		return StepUtil.getNumberOfFeatures(estimators);
 	}
 
 	@Override
@@ -53,7 +55,7 @@ public class AdaBoostRegressor extends EnsembleRegressor {
 		List<Model> models = new ArrayList<>();
 
 		for(Regressor estimator : estimators){
-			Model model = estimator.encodeModel(segmentSchema);
+			Model model = estimator.encode(segmentSchema);
 
 			models.add(model);
 		}
@@ -65,6 +67,6 @@ public class AdaBoostRegressor extends EnsembleRegressor {
 	}
 
 	public List<? extends Number> getEstimatorWeights(){
-		return getArray("estimator_weights_", Number.class);
+		return getNumberArray("estimator_weights_");
 	}
 }

@@ -18,6 +18,8 @@
  */
 package sklearn.compose;
 
+import java.util.Collections;
+
 import numpy.core.UFunc;
 import numpy.core.UFuncUtil;
 import org.dmg.pmml.DataType;
@@ -28,6 +30,7 @@ import org.dmg.pmml.Model;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.regression.RegressionModel.NormalizationMethod;
 import org.jpmml.converter.AbstractTransformation;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.Label;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
@@ -51,7 +54,7 @@ public class TransformedTargetRegressor extends Regressor {
 		UFunc inverseFunc = transformer.getInverseFunc();
 
 		if(inverseFunc == null){
-			return regressor.encodeModel(schema);
+			return regressor.encode(schema);
 		}
 
 		Label label = schema.getLabel();
@@ -60,12 +63,12 @@ public class TransformedTargetRegressor extends Regressor {
 
 			@Override
 			public FieldName getName(FieldName name){
-				return FieldName.create("inverseFunc(" + name + ")");
+				return FieldNameUtil.create("inverseFunc", name);
 			}
 
 			@Override
 			public Expression createExpression(FieldRef fieldRef){
-				return UFuncUtil.encodeUFunc(inverseFunc, fieldRef);
+				return UFuncUtil.encodeUFunc(inverseFunc, Collections.singletonList(fieldRef));
 			}
 		};
 
@@ -73,8 +76,8 @@ public class TransformedTargetRegressor extends Regressor {
 
 		Schema segmentSchema = schema.toAnonymousSchema();
 
-		Model model = regressor.encodeModel(segmentSchema)
-			.setOutput(ModelUtil.createPredictedOutput(FieldName.create("func(" + name + ")"), OpType.CONTINUOUS, DataType.DOUBLE, transformation));
+		Model model = regressor.encode(segmentSchema)
+			.setOutput(ModelUtil.createPredictedOutput(FieldNameUtil.create("func", name), OpType.CONTINUOUS, DataType.DOUBLE, transformation));
 
 		return MiningModelUtil.createRegression(model, NormalizationMethod.NONE, schema);
 	}

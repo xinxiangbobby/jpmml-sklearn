@@ -44,11 +44,12 @@ import org.dmg.pmml.nearest_neighbor.TrainingInstances;
 import org.jpmml.converter.CMatrixUtil;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.Label;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.Schema;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import sklearn.Estimator;
 
 public class KNeighborsUtil {
@@ -117,7 +118,7 @@ public class KNeighborsUtil {
 		for(int i = 0; i < numberOfNeighbors; i++){
 			int rank = (i + 1);
 
-			OutputField outputField = new OutputField(FieldName.create("neighbor(" + rank + ")"), OpType.CATEGORICAL, DataType.STRING)
+			OutputField outputField = new OutputField(FieldNameUtil.create("neighbor", rank), OpType.CATEGORICAL, DataType.STRING)
 				.setResultFeature(ResultFeature.ENTITY_ID)
 				.setRank(rank);
 
@@ -132,12 +133,21 @@ public class KNeighborsUtil {
 
 	static
 	private ComparisonMeasure encodeComparisonMeasure(String metric, int p){
+		Measure measure;
 
 		switch(metric){
+			case "euclidean":
+				{
+					measure = new Euclidean();
+				}
+				break;
+			case "manhattan":
+				{
+					measure = new CityBlock();
+				}
+				break;
 			case "minkowski":
 				{
-					Measure measure;
-
 					switch(p){
 						case 1:
 							measure = new CityBlock();
@@ -149,14 +159,15 @@ public class KNeighborsUtil {
 							measure = new Minkowski(p);
 							break;
 					}
-
-					ComparisonMeasure comparisonMeasure = new ComparisonMeasure(ComparisonMeasure.Kind.DISTANCE, measure)
-						.setCompareFunction(CompareFunction.ABS_DIFF);
-
-					return comparisonMeasure;
 				}
+				break;
 			default:
 				throw new IllegalArgumentException(metric);
 		}
+
+		ComparisonMeasure comparisonMeasure = new ComparisonMeasure(ComparisonMeasure.Kind.DISTANCE, measure)
+			.setCompareFunction(CompareFunction.ABS_DIFF);
+
+		return comparisonMeasure;
 	}
 }

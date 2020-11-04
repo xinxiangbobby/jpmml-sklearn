@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jpmml.converter.Feature;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 
 abstract
-public class Selector extends MultiTransformer implements HasNumberOfFeatures {
+public class Selector extends MultiTransformer {
 
 	public Selector(String module, String name){
 		super(module, name);

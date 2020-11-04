@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jpmml.converter.Feature;
+import org.jpmml.python.TupleUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import org.jpmml.sklearn.TupleUtil;
 import sklearn.MultiTransformer;
 import sklearn.Transformer;
 
@@ -42,7 +42,7 @@ public class FeatureUnion extends MultiTransformer {
 		for(Transformer transformer : transformers){
 			List<Feature> transformerFeatures = new ArrayList<>(features);
 
-			transformerFeatures = transformer.updateAndEncodeFeatures(transformerFeatures, encoder);
+			transformerFeatures = transformer.encode(transformerFeatures, encoder);
 
 			result.addAll(transformerFeatures);
 		}

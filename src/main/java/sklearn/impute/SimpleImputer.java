@@ -23,12 +23,12 @@ import java.util.List;
 
 import org.dmg.pmml.MissingValueTreatmentMethod;
 import org.jpmml.converter.Feature;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.converter.ValueUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 
-public class SimpleImputer extends Transformer implements HasNumberOfFeatures {
+public class SimpleImputer extends Transformer {
 
 	public SimpleImputer(String module, String name){
 		super(module, name);
@@ -36,12 +36,7 @@ public class SimpleImputer extends Transformer implements HasNumberOfFeatures {
 
 	@Override
 	public int getNumberOfFeatures(){
-		Boolean addIndicator = getAddIndicator();
 		int[] shape = getStatisticsShape();
-
-		if(addIndicator){
-			return 2 * shape[0];
-		}
 
 		return shape[0];
 	}
@@ -55,7 +50,7 @@ public class SimpleImputer extends Transformer implements HasNumberOfFeatures {
 
 		ClassDictUtil.checkSize(features, statistics);
 
-		if((Double.valueOf(Double.NaN)).equals(missingValues)){
+		if(ValueUtil.isNaN(missingValues)){
 			missingValues = null;
 		}
 
@@ -70,12 +65,12 @@ public class SimpleImputer extends Transformer implements HasNumberOfFeatures {
 			Object statistic = statistics.get(i);
 
 			if(addIndicator){
-				Feature indicatorFeature = ImputerUtil.encodeIndicatorFeature(feature, missingValues, encoder);
+				Feature indicatorFeature = ImputerUtil.encodeIndicatorFeature(this, feature, missingValues, encoder);
 
 				indicatorFeatures.add(indicatorFeature);
 			}
 
-			feature = ImputerUtil.encodeFeature(feature, addIndicator, missingValues, statistic, missingValueTreatment, encoder);
+			feature = ImputerUtil.encodeFeature(this, feature, addIndicator, missingValues, statistic, missingValueTreatment, encoder);
 
 			result.add(feature);
 		}

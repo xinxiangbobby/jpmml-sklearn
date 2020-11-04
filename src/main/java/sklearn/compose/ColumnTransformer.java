@@ -28,11 +28,11 @@ import org.dmg.pmml.DataField;
 import org.dmg.pmml.FieldName;
 import org.jpmml.converter.Feature;
 import org.jpmml.converter.WildcardFeature;
-import org.jpmml.sklearn.CastFunction;
-import org.jpmml.sklearn.ClassDictUtil;
-import org.jpmml.sklearn.HasArray;
+import org.jpmml.python.CastFunction;
+import org.jpmml.python.ClassDictUtil;
+import org.jpmml.python.HasArray;
+import org.jpmml.python.TupleUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import org.jpmml.sklearn.TupleUtil;
 import sklearn.Drop;
 import sklearn.Initializer;
 import sklearn.PassThrough;
@@ -60,7 +60,7 @@ public class ColumnTransformer extends Initializer {
 
 			List<Feature> rowFeatures = getFeatures(fittedTransformer, features, encoder);
 
-			rowFeatures = transformer.updateAndEncodeFeatures(rowFeatures, encoder);
+			rowFeatures = transformer.encode(rowFeatures, encoder);
 
 			result.addAll(rowFeatures);
 		}
@@ -104,6 +104,10 @@ public class ColumnTransformer extends Initializer {
 	static
 	private List<Feature> getFeatures(Object[] fittedTransformer, List<Feature> features, SkLearnEncoder encoder){
 		Object columns = TupleUtil.extractElement(fittedTransformer, 2);
+
+		if((columns instanceof String) || (columns instanceof Integer)){
+			columns = Collections.singletonList(columns);
+		} else
 
 		if(columns instanceof HasArray){
 			HasArray hasArray = (HasArray)columns;

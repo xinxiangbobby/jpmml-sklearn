@@ -21,13 +21,10 @@ package sklearn2pmml.decoration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.dmg.pmml.DataField;
-import org.dmg.pmml.DataType;
-import org.dmg.pmml.OpType;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.ObjectFeature;
 import org.jpmml.converter.WildcardFeature;
 import org.jpmml.sklearn.SkLearnEncoder;
+import sklearn.HasNumberOfFeatures;
 
 abstract
 public class TemporalDomain extends Domain {
@@ -37,33 +34,26 @@ public class TemporalDomain extends Domain {
 	}
 
 	@Override
-	public OpType getOpType(){
-		return OpType.ORDINAL;
+	public int getNumberOfFeatures(){
+		return HasNumberOfFeatures.UNKNOWN;
 	}
 
 	@Override
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
-		List<Feature> result = new ArrayList<>();
+		features = super.encodeFeatures(features, encoder);
 
-		OpType opType = getOpType();
-		DataType dataType = getDataType();
+		List<Feature> result = new ArrayList<>();
 
 		for(int i = 0; i < features.size(); i++){
 			Feature feature = features.get(i);
 
 			WildcardFeature wildcardFeature = asWildcardFeature(feature);
 
-			DataField dataField = wildcardFeature.getField();
-
-			dataField
-				.setOpType(opType)
-				.setDataType(dataType);
-
-			feature = new ObjectFeature(encoder, dataField.getName(), dataField.getDataType());
+			feature = wildcardFeature.toOrdinalFeature(null);
 
 			result.add(feature);
 		}
 
-		return super.encodeFeatures(result, encoder);
+		return result;
 	}
 }

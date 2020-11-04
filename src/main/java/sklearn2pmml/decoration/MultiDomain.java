@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jpmml.converter.Feature;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.MultiTransformer;
 
@@ -47,7 +47,9 @@ public class MultiDomain extends MultiTransformer {
 
 			List<Feature> domainFeatures = Collections.singletonList(feature);
 
-			domainFeatures = domain.updateAndEncodeFeatures(domainFeatures, encoder);
+			if(domain != null){
+				domainFeatures = domain.encode(domainFeatures, encoder);
+			}
 
 			result.addAll(domainFeatures);
 		}

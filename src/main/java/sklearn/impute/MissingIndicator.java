@@ -24,14 +24,21 @@ import java.util.List;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.Feature;
+import org.jpmml.converter.ValueUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 
-public class MissingIndicator extends Transformer implements HasNumberOfFeatures {
+public class MissingIndicator extends Transformer {
 
 	public MissingIndicator(String module, String name){
 		super(module, name);
+	}
+
+	@Override
+	public int getNumberOfFeatures(){
+		int[] shape = getFeatureIndicesShape();
+
+		return shape[0];
 	}
 
 	@Override
@@ -45,18 +52,11 @@ public class MissingIndicator extends Transformer implements HasNumberOfFeatures
 	}
 
 	@Override
-	public int getNumberOfFeatures(){
-		int[] shape = getFeatureIndicesShape();
-
-		return shape[0];
-	}
-
-	@Override
 	public List<Feature> encodeFeatures(List<Feature> features, SkLearnEncoder encoder){
 		List<Integer> featureIndices = getFeatureIndices();
 		Object missingValues = getMissingValues();
 
-		if((Double.valueOf(Double.NaN)).equals(missingValues)){
+		if(ValueUtil.isNaN(missingValues)){
 			missingValues = null;
 		}
 
@@ -65,7 +65,7 @@ public class MissingIndicator extends Transformer implements HasNumberOfFeatures
 		for(Integer featureIndex : featureIndices){
 			Feature feature = features.get(featureIndex);
 
-			feature = ImputerUtil.encodeIndicatorFeature(feature, missingValues, encoder);
+			feature = ImputerUtil.encodeIndicatorFeature(this, feature, missingValues, encoder);
 
 			result.add(feature);
 		}

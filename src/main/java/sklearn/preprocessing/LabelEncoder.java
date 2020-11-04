@@ -25,7 +25,7 @@ import org.dmg.pmml.DataType;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.Feature;
 import org.jpmml.converter.TypeUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.Transformer;
 
@@ -55,7 +55,7 @@ public class LabelEncoder extends Transformer {
 
 		Feature feature = features.get(0);
 
-		return Collections.singletonList(EncoderUtil.encodeIndexFeature(feature, classes, DataType.INTEGER, encoder));
+		return Collections.singletonList(EncoderUtil.encodeIndexFeature(this, feature, classes, DataType.INTEGER, encoder));
 	}
 
 	public List<?> getClasses(){

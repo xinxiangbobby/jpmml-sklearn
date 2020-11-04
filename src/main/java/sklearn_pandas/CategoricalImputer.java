@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.dmg.pmml.MissingValueTreatmentMethod;
 import org.jpmml.converter.Feature;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.Transformer;
 import sklearn.impute.ImputerUtil;
@@ -47,7 +47,7 @@ public class CategoricalImputer extends Transformer {
 
 		Feature feature = features.get(0);
 
-		feature = ImputerUtil.encodeFeature(feature, false, missingValues, fill, MissingValueTreatmentMethod.AS_MODE, encoder);
+		feature = ImputerUtil.encodeFeature(this, feature, false, missingValues, fill, MissingValueTreatmentMethod.AS_MODE, encoder);
 
 		return Collections.singletonList(feature);
 	}

@@ -20,7 +20,6 @@ package sklearn.decomposition;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.dmg.pmml.Apply;
 import org.dmg.pmml.DerivedField;
@@ -30,24 +29,16 @@ import org.dmg.pmml.PMMLFunctions;
 import org.jpmml.converter.CMatrixUtil;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
+import org.jpmml.converter.FieldNameUtil;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.ValueUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import sklearn.HasNumberOfFeatures;
-import sklearn.Transformer;
 
-public class PCA extends Transformer implements HasNumberOfFeatures {
+public class PCA extends BasePCA {
 
 	public PCA(String module, String name){
 		super(module, name);
-	}
-
-	@Override
-	public int getNumberOfFeatures(){
-		int[] shape = getComponentsShape();
-
-		return shape[1];
 	}
 
 	@Override
@@ -68,14 +59,14 @@ public class PCA extends Transformer implements HasNumberOfFeatures {
 
 		ClassDictUtil.checkSize(numberOfComponents, explainedVariance);
 
-		String id = "pca@" + String.valueOf(PCA.SEQUENCE.getAndIncrement());
+		FieldName name = createFieldName("pca", features);
 
 		List<Feature> result = new ArrayList<>();
 
 		for(int i = 0; i < numberOfComponents; i++){
 			List<? extends Number> component = CMatrixUtil.getRow(components, numberOfComponents, numberOfFeatures, i);
 
-			Apply apply = new Apply(PMMLFunctions.SUM);
+			Apply apply = PMMLUtil.createApply(PMMLFunctions.SUM);
 
 			for(int j = 0; j < numberOfFeatures; j++){
 				Feature feature = features.get(j);
@@ -113,7 +104,7 @@ public class PCA extends Transformer implements HasNumberOfFeatures {
 				}
 			}
 
-			DerivedField derivedField = encoder.createDerivedField(FieldName.create(id + "[" + String.valueOf(i) + "]"), apply);
+			DerivedField derivedField = encoder.createDerivedField(FieldNameUtil.select(name, i), apply);
 
 			result.add(new ContinuousFeature(encoder, derivedField));
 		}
@@ -125,21 +116,11 @@ public class PCA extends Transformer implements HasNumberOfFeatures {
 		return getBoolean("whiten");
 	}
 
-	public List<? extends Number> getComponents(){
-		return getArray("components_", Number.class);
-	}
-
-	public int[] getComponentsShape(){
-		return getArrayShape("components_", 2);
-	}
-
 	public List<? extends Number> getExplainedVariance(){
-		return getArray("explained_variance_", Number.class);
+		return getNumberArray("explained_variance_");
 	}
 
 	public List<? extends Number> getMean(){
-		return getArray("mean_", Number.class);
+		return getNumberArray("mean_");
 	}
-
-	private static final AtomicInteger SEQUENCE = new AtomicInteger(1);
 }

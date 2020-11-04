@@ -24,17 +24,16 @@ import java.util.List;
 import org.dmg.pmml.Apply;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.DerivedField;
-import org.dmg.pmml.FieldName;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMMLFunctions;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
+import org.jpmml.converter.PMMLUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
 import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 
-public class Aggregator extends Transformer implements HasNumberOfFeatures {
+public class Aggregator extends Transformer {
 
 	public Aggregator(String module, String name){
 		super(module, name);
@@ -42,7 +41,7 @@ public class Aggregator extends Transformer implements HasNumberOfFeatures {
 
 	@Override
 	public int getNumberOfFeatures(){
-		return -1;
+		return HasNumberOfFeatures.UNKNOWN;
 	}
 
 	@Override
@@ -53,15 +52,13 @@ public class Aggregator extends Transformer implements HasNumberOfFeatures {
 			return features;
 		}
 
-		Apply apply = new Apply(translateFunction(function));
+		Apply apply = PMMLUtil.createApply(translateFunction(function));
 
 		for(Feature feature : features){
 			apply.addExpressions(feature.ref());
 		}
 
-		FieldName name = FeatureUtil.createName(function, features);
-
-		DerivedField derivedField = encoder.createDerivedField(name, OpType.CONTINUOUS, DataType.DOUBLE, apply);
+		DerivedField derivedField = encoder.createDerivedField(createFieldName(function, features), OpType.CONTINUOUS, DataType.DOUBLE, apply);
 
 		return Collections.singletonList(new ContinuousFeature(encoder, derivedField));
 	}
@@ -77,9 +74,15 @@ public class Aggregator extends Transformer implements HasNumberOfFeatures {
 			case "max":
 				return PMMLFunctions.MAX;
 			case "mean":
+			case "avg":
 				return PMMLFunctions.AVG;
 			case "min":
 				return PMMLFunctions.MIN;
+			case "prod":
+			case "product":
+				return PMMLFunctions.PRODUCT;
+			case "sum":
+				return PMMLFunctions.SUM;
 			default:
 				throw new IllegalArgumentException(function);
 		}

@@ -26,15 +26,13 @@ import org.dmg.pmml.Expression;
 import org.dmg.pmml.PMMLFunctions;
 import org.jpmml.converter.ContinuousFeature;
 import org.jpmml.converter.Feature;
-import org.jpmml.converter.FeatureUtil;
 import org.jpmml.converter.PMMLUtil;
 import org.jpmml.converter.ValueUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.python.ClassDictUtil;
 import org.jpmml.sklearn.SkLearnEncoder;
-import sklearn.HasNumberOfFeatures;
 import sklearn.Transformer;
 
-public class MinMaxScaler extends Transformer implements HasNumberOfFeatures {
+public class MinMaxScaler extends Transformer {
 
 	public MinMaxScaler(String module, String name){
 		super(module, name);
@@ -81,7 +79,7 @@ public class MinMaxScaler extends Transformer implements HasNumberOfFeatures {
 				expression = PMMLUtil.createApply(PMMLFunctions.ADD, expression, PMMLUtil.createConstant(minValue));
 			}
 
-			DerivedField derivedField = encoder.createDerivedField(FeatureUtil.createName("mix_max_scaler", continuousFeature), expression);
+			DerivedField derivedField = encoder.createDerivedField(createFieldName("minMaxScaler", continuousFeature), expression);
 
 			result.add(new ContinuousFeature(encoder, derivedField));
 		}
@@ -90,11 +88,11 @@ public class MinMaxScaler extends Transformer implements HasNumberOfFeatures {
 	}
 
 	public List<? extends Number> getMin(){
-		return getArray("min_", Number.class);
+		return getNumberArray("min_");
 	}
 
 	public List<? extends Number> getScale(){
-		return getArray("scale_", Number.class);
+		return getNumberArray("scale_");
 	}
 
 	public int[] getScaleShape(){

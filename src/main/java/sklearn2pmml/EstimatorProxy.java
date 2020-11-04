@@ -25,9 +25,9 @@ import org.dmg.pmml.MiningFunction;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.OpType;
 import org.jpmml.converter.Schema;
-import org.jpmml.sklearn.CastFunction;
-import org.jpmml.sklearn.ClassDictUtil;
-import org.jpmml.sklearn.PyClassDict;
+import org.jpmml.python.CastFunction;
+import org.jpmml.python.ClassDictUtil;
+import org.jpmml.python.PythonObject;
 import sklearn.ClassifierUtil;
 import sklearn.Estimator;
 import sklearn.HasClasses;
@@ -41,32 +41,6 @@ public class EstimatorProxy extends Estimator implements HasClasses, HasEstimato
 
 	public EstimatorProxy(String module, String name){
 		super(module, name);
-	}
-
-	@Override
-	public Object get(Object key){
-
-		if(super.containsKey(key)){
-			return super.get(key);
-		}
-
-		Estimator estimator = getEstimator();
-
-		return estimator.get(key);
-	}
-
-	@Override
-	public MiningFunction getMiningFunction(){
-		Estimator estimator = getEstimator();
-
-		return estimator.getMiningFunction();
-	}
-
-	@Override
-	public boolean isSupervised(){
-		Estimator estimator = getEstimator();
-
-		return estimator.isSupervised();
 	}
 
 	@Override
@@ -91,6 +65,20 @@ public class EstimatorProxy extends Estimator implements HasClasses, HasEstimato
 	}
 
 	@Override
+	public MiningFunction getMiningFunction(){
+		Estimator estimator = getEstimator();
+
+		return estimator.getMiningFunction();
+	}
+
+	@Override
+	public boolean isSupervised(){
+		Estimator estimator = getEstimator();
+
+		return estimator.isSupervised();
+	}
+
+	@Override
 	public List<?> getClasses(){
 		Estimator estimator = getEstimator();
 
@@ -105,24 +93,40 @@ public class EstimatorProxy extends Estimator implements HasClasses, HasEstimato
 	}
 
 	/**
-	 * @see PyClassDict#get(String, Class)
+	 * @see PythonObject#get(String, Class)
 	 */
 	@Override
 	public Estimator getEstimator(){
-		Object estimator = super.get("estimator_");
+		String name;
 
+		// SkLearn2PMML 0.54.0
+		if(containsKey("estimator_")){
+			name = "estimator_";
+		} else
+
+		// SkLearn2PMML 0.55.0+
+		{
+			name = "estimator";
+		}
+
+		Object estimator = get(name);
 		if(estimator == null){
-			throw new IllegalArgumentException("Attribute \'" + ClassDictUtil.formatMember(this, "estimator_") + "\' has a missing (None/null) value");
+			throw new IllegalArgumentException("Attribute \'" + ClassDictUtil.formatMember(this, name) + "\' has a missing (None/null) value");
 		}
 
 		CastFunction<Estimator> castFunction = new CastFunction<Estimator>(Estimator.class){
 
 			@Override
 			protected String formatMessage(Object object){
-				return "Attribute \'" + ClassDictUtil.formatMember(EstimatorProxy.this, "estimator_") + "\' has an unsupported value (" + ClassDictUtil.formatClass(object) + ")";
+				return "Attribute \'" + ClassDictUtil.formatMember(EstimatorProxy.this, name) + "\' has an unsupported value (" + ClassDictUtil.formatClass(object) + ")";
 			}
 		};
 
 		return castFunction.apply(estimator);
+	}
+
+	static
+	public String formatProxyExample(Estimator estimator){
+		return (EstimatorProxy.class.getSimpleName() + "(" + estimator.getPythonName() + "(...))");
 	}
 }

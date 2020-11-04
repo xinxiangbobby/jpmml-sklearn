@@ -32,8 +32,8 @@ import org.dmg.pmml.tree.TreeModel;
 import org.jpmml.converter.CategoricalLabel;
 import org.jpmml.converter.ModelUtil;
 import org.jpmml.converter.Schema;
-import org.jpmml.model.ValueUtil;
-import org.jpmml.sklearn.ClassDictUtil;
+import org.jpmml.converter.ValueUtil;
+import org.jpmml.python.ClassDictUtil;
 import sklearn.Classifier;
 import sklearn.HasPriorProbability;
 
@@ -104,12 +104,12 @@ public class DummyClassifier extends Classifier implements HasPriorProbability {
 				throw new IllegalArgumentException(strategy);
 		}
 
-		Node root = new ClassifierNode(ValueUtil.toString(classes.get(index)), True.INSTANCE);
+		Node root = new ClassifierNode(ValueUtil.asString(classes.get(index)), True.INSTANCE);
 
 		List<ScoreDistribution> scoreDistributions = root.getScoreDistributions();
 
 		for(int i = 0; i < classes.size(); i++){
-			ScoreDistribution scoreDistribution = new ScoreDistribution(ValueUtil.toString(classes.get(i)), probabilities[i]);
+			ScoreDistribution scoreDistribution = new ScoreDistribution(ValueUtil.asString(classes.get(i)), probabilities[i]);
 
 			scoreDistributions.add(scoreDistribution);
 		}
@@ -121,7 +121,7 @@ public class DummyClassifier extends Classifier implements HasPriorProbability {
 	}
 
 	public List<? extends Number> getClassPrior(){
-		return getArray("class_prior_", Number.class);
+		return getNumberArray("class_prior_");
 	}
 
 	public Object getConstant(){
